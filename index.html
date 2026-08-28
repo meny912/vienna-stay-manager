@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow">
+<title>Vienna Stay — Manager</title>
+<style>
+:root{
+  --brand:#8a7d6b;--brand-dark:#6d6153;--brand-darker:#554c41;
+  --cream:#faf8f5;--beige:#f1ece4;--beige-line:#e4ddd1;--ink:#2c2822;--muted:#7a7266;
+  --danger:#c0562f;--danger-dark:#9e4525;--ok:#4b7a52;--teal:#2f9e8f;--radius:12px;--shadow:0 4px 20px rgba(70,60,48,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--cream);line-height:1.5}
+h1,h2,h3,.serif{font-family:Georgia,"Times New Roman",serif;letter-spacing:.2px}
+.container{max-width:1080px;margin:0 auto;padding:0 20px}
+.site-header{background:var(--brand);color:#fff}
+.site-header .container{display:flex;align-items:center;justify-content:space-between;height:68px}
+.logo{display:flex;align-items:center;gap:12px;cursor:pointer}
+.logo-mark{width:40px;height:40px;border:2px solid #fff;border-radius:6px;display:grid;place-items:center;font-size:20px}
+.logo-mark-img{height:48px;width:auto;display:block}
+.logo-text .l1{font-family:Georgia,serif;font-size:18px;font-weight:700;letter-spacing:1px;display:block;line-height:1.1}
+.logo-text .l2{font-size:11px;letter-spacing:3px;opacity:.85;text-transform:uppercase}
+.nav a{color:#fff;text-decoration:none;margin-left:22px;font-size:15px;opacity:.92;cursor:pointer}
+.nav a:hover{opacity:1;text-decoration:underline}
+.langsw{margin-left:20px;border-left:1px solid rgba(255,255,255,.3);padding-left:14px}
+.langsw a{margin-left:8px;font-size:13px;opacity:.8}
+.langsw a.on{opacity:1;font-weight:700;text-decoration:underline}
+.chat-fab{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:24px;cursor:pointer;box-shadow:0 6px 20px rgba(70,60,48,.28);z-index:300;user-select:none}
+.chat-fab:hover{background:var(--brand-dark)}
+.chat-panel{position:fixed;right:20px;bottom:88px;width:350px;max-width:calc(100vw - 40px);height:480px;max-height:calc(100vh - 120px);background:#fff;border:1px solid var(--beige-line);border-radius:16px;box-shadow:0 14px 44px rgba(70,60,48,.28);display:flex;flex-direction:column;overflow:hidden;z-index:300}
+.chat-head{background:var(--brand);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-family:Georgia,serif}
+.chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;background:var(--cream)}
+.cmsg{max-width:84%;padding:9px 12px;border-radius:13px;font-size:14px;line-height:1.45}
+.cmsg.bot{background:#fff;border:1px solid var(--beige-line);align-self:flex-start;border-bottom-left-radius:3px}
+.cmsg.user{background:var(--brand);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.cmsg a{color:var(--brand-dark);font-weight:600}
+.cmsg.user a{color:#fff}
+.chat-sugg{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chat-sugg button{background:#fff;border:1px solid var(--beige-line);border-radius:999px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--brand-dark)}
+.chat-sugg button:hover{background:var(--beige)}
+.chat-input{display:flex;gap:6px;padding:10px;border-top:1px solid var(--beige-line);background:#fff}
+.chat-input input{flex:1;border:1px solid var(--beige-line);border-radius:10px;padding:9px 12px;font-size:14px;background:var(--cream);color:var(--ink)}
+.chat-input button{background:var(--brand);color:#fff;border:none;border-radius:10px;width:42px;cursor:pointer;font-size:16px}
+.typing{display:inline-flex;gap:4px;padding:3px 2px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;animation:tdot 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}
+.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tdot{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--brand);color:#fff;border:none;padding:12px 22px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s}
+.btn:hover{background:var(--brand-dark)}
+.btn:disabled{background:#c9c2b6;cursor:not-allowed}
+.btn-sm{padding:7px 14px;font-size:13px}
+.btn-ghost{background:transparent;color:var(--brand-dark);border:1px solid var(--beige-line)}
+.btn-ghost:hover{background:var(--beige)}
+.btn-danger{background:var(--danger)}.btn-danger:hover{background:var(--danger-dark)}
+.btn-block{width:100%}
+.card{background:#fff;border:1px solid var(--beige-line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.locmap{width:100%;display:block;height:480px;max-height:70vh;border-radius:12px;border:1px solid var(--beige-line);overflow:hidden;z-index:0}
+.leaflet-popup-content{font-family:-apple-system,sans-serif;font-size:13px}
+.hero{background:linear-gradient(rgba(85,76,65,.55),rgba(85,76,65,.55)),url('https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=1600&q=70');background-size:cover;background-position:center;color:#fff;padding:72px 0 84px}
+.hero h1{font-size:44px;margin:0 0 10px}.hero p{font-size:18px;opacity:.95;margin:0}
+.searchbox{background:#fff;color:var(--ink);border-radius:14px;box-shadow:var(--shadow);padding:18px;margin-top:28px;display:grid;grid-template-columns:1fr 1fr .7fr auto;gap:14px;align-items:end}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.field input{width:100%;padding:11px 12px;border:1px solid var(--beige-line);border-radius:9px;font-size:15px;background:var(--cream);color:var(--ink)}
+.datebox{width:100%;padding:11px 12px;border:1px solid var(--beige-line);border-radius:9px;font-size:15px;background:var(--cream);color:var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.datebox .cal-ic{font-size:13px;opacity:.7}
+.cal-pop{position:absolute;top:100%;left:0;margin-top:6px;background:#fff;border:1px solid var(--beige-line);border-radius:12px;box-shadow:var(--shadow);padding:12px;z-index:60;width:282px}
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:700;font-family:Georgia,serif;color:var(--ink)}
+.cal-head button{border:none;background:var(--beige);border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:17px;color:var(--brand-dark)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cwd{font-size:11px;color:var(--muted);text-align:center;padding:4px 0;font-weight:600}
+.cd{text-align:center;padding:7px 0;border-radius:7px;cursor:pointer;font-size:13px;color:var(--ink)}
+.cd:hover:not(.dis):not(.empty){background:var(--beige)}
+.cd.sel{background:var(--brand);color:#fff;font-weight:700}
+.cd.dis{color:#cfc7ba;cursor:default}
+.cd.empty{cursor:default}
+.nights-pill{background:var(--beige);border-radius:8px;padding:6px 12px;font-size:14px;color:var(--brand-dark);display:inline-block;margin-top:10px}
+.helper{color:var(--danger);font-size:13px;margin-top:10px}
+.section{padding:40px 0}.section h2{font-size:28px;margin:0 0 6px}.section .sub{color:var(--muted);margin:0 0 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+.unit-card img{width:100%;height:190px;object-fit:cover;display:block}
+.unit-card .body{padding:16px}.unit-card h3{margin:0 0 6px;font-size:20px}
+.unit-card .desc{color:var(--muted);font-size:14px;margin:0 0 14px;min-height:40px}
+.price-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.price-row .per{color:var(--muted);font-size:13px}.price-row .total{font-weight:700;font-size:17px}
+.combo-badge{display:inline-block;background:var(--teal);color:#fff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;margin-bottom:8px}
+.combo-imgs{display:flex}.combo-imgs img{width:50%;height:150px;object-fit:cover}
+.chip{display:inline-block;background:var(--beige);color:var(--brand-dark);border-radius:999px;padding:3px 10px;font-size:12px;margin:2px 4px 2px 0}
+.summary-bar{background:var(--beige);border:1px solid var(--beige-line);border-radius:10px;padding:12px 16px;margin:22px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:28px;align-items:start}
+.pad{padding:22px}.gallery{width:100%;height:340px;object-fit:cover;border-radius:12px}
+.muted{color:var(--muted)}.stack>*+*{margin-top:12px}.divider{height:1px;background:var(--beige-line);margin:16px 0}
+.timer{display:inline-flex;align-items:center;gap:8px;background:var(--beige);border:1px solid var(--beige-line);color:var(--brand-dark);border-radius:999px;padding:8px 16px;font-weight:600;font-size:15px}
+.timer.warn{background:#f7e3d6;border-color:#eac3ab;color:var(--danger-dark)}
+.timer.expired{background:#f3d2c6}
+.breakdown{font-size:15px}.breakdown .line{display:flex;justify-content:space-between;padding:5px 0}
+.breakdown .discount{color:var(--ok)}
+.breakdown .grand{border-top:1px solid var(--beige-line);margin-top:8px;padding-top:10px;font-weight:700;font-size:18px}
+.promo-row{display:flex;gap:8px}
+.promo-row input{flex:1;padding:10px 12px;border:1px solid var(--beige-line);border-radius:9px;background:var(--cream)}
+.inline-error{color:var(--danger);font-size:13px;margin-top:6px}.inline-ok{color:var(--ok);font-size:13px;margin-top:6px}
+.park-opt{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:14px;color:var(--ink);background:var(--cream);border:1px solid var(--beige-line);border-radius:9px;padding:10px 12px}
+.park-opt input{width:17px;height:17px;cursor:pointer}
+textarea.ctrl{width:100%;padding:11px 12px;border:1px solid var(--beige-line);border-radius:9px;font-size:14px;background:var(--cream);color:var(--ink);font-family:inherit;resize:vertical}
+.email-edit{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:14px}
+.email-prev{border:1px solid var(--beige-line);border-radius:10px;padding:14px;margin-top:8px;background:#fff}
+.email-subj{font-weight:700;margin-bottom:8px;font-family:Georgia,serif}
+.email-body{white-space:pre-wrap;font-size:14px;line-height:1.5}
+@media(max-width:900px){.email-edit{grid-template-columns:1fr}}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge.confirmed{background:#e2efe3;color:var(--ok)}.badge.cancelled{background:#f3d9cf;color:var(--danger-dark)}
+.badge.soft_locked{background:#efe7d6;color:#8a6d1f}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}.empty .icon{font-size:46px;margin-bottom:10px}
+.notice{background:#f7e3d6;border:1px solid #eac3ab;color:var(--danger-dark);border-radius:10px;padding:14px 16px;font-size:14px}
+.site-footer{background:var(--brand-darker);color:#e9e2d8;margin-top:50px;padding:26px 0;font-size:14px}
+.site-footer .container{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.site-footer a{color:#fff;cursor:pointer;text-decoration:underline} .ig-link{display:inline-flex;align-items:center;gap:7px;text-decoration:none!important;color:#fff}.ig-link:hover{opacity:.8}.ig-link svg{width:19px;height:19px;flex:none}.nav .ig-link{color:#fff}.nav .ig-link svg{width:20px;height:20px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.form-grid .full{grid-column:1/-1}
+input.ctrl,select.ctrl{width:100%;padding:11px 12px;border:1px solid var(--beige-line);border-radius:9px;font-size:15px;background:var(--cream);color:var(--ink)}
+label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+/* ADMIN */
+.admin-top{background:var(--brand-darker);color:#fff;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+.admin-top .brand{display:flex;align-items:center;gap:10px;font-family:Georgia,serif;letter-spacing:1px}
+.admin-top a{color:#e9e2d8;cursor:pointer;text-decoration:none;font-size:14px;margin-left:18px}
+.admin-top a:hover{color:#fff;text-decoration:underline}
+.admin-layout{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 56px)}
+.admin-side{background:#fff;border-right:1px solid var(--beige-line);padding:16px 12px}
+.admin-side .grp{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:16px 8px 6px}
+.admin-side a{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;color:var(--ink);text-decoration:none;cursor:pointer;font-size:14px}
+.admin-side a:hover{background:var(--cream)}
+.admin-side a.active{background:var(--beige);color:var(--brand-dark);font-weight:700}
+.admin-side a.disabled{color:#b9b1a4;cursor:default}
+.admin-main{padding:26px;background:var(--cream)}
+.admin-main h1{font-size:26px;margin:0 0 2px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0}
+.kpi{background:#fff;border:1px solid var(--beige-line);border-radius:12px;padding:16px}
+.kpi .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center}
+.kpi .big{font-size:26px;font-weight:700;margin-top:8px;font-family:Georgia,serif}
+.kpi .sub{font-size:13px;color:var(--muted);margin-top:2px}
+.tag{background:var(--teal);color:#fff;font-size:11px;padding:2px 8px;border-radius:999px}
+.panel{background:#fff;border:1px solid var(--beige-line);border-radius:12px;padding:18px;margin-top:16px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th,.tbl td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--beige-line);white-space:nowrap}
+.tbl th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.tbl tr:hover td{background:var(--cream)}
+.bars{display:flex;align-items:flex-end;gap:5px;height:120px;margin-top:10px}
+.bar{flex:1;background:var(--brand);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.bar span{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filters .f{padding:6px 12px;border-radius:999px;border:1px solid var(--beige-line);background:#fff;cursor:pointer;font-size:13px}
+.filters .f.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.cal{overflow-x:auto}
+.cal table{border-collapse:collapse;font-size:12px}
+.cal th,.cal td{border:1px solid var(--beige-line);padding:0;text-align:center;min-width:34px;height:34px}
+.cal th.unit,.cal td.unit{text-align:left;padding:6px 10px;min-width:150px;white-space:nowrap;font-weight:600}
+.cal .booked{background:var(--brand);color:#fff}
+.cal .today{outline:2px solid var(--teal);outline-offset:-2px}
+.cal table.pl{width:100%}
+.pl th,.pl td{border:1px solid var(--beige-line);height:40px;min-width:42px;text-align:center;padding:0}
+.pl th.pl-unit,.pl td.pl-unit{text-align:left;padding:6px 10px;min-width:180px;white-space:nowrap;font-weight:600;background:#fff;position:sticky;left:0;z-index:1}
+.pl th.plday .n{font-weight:700;font-size:14px}.pl th.plday .m{font-size:10px;color:var(--muted)}.pl th.plday .w{font-size:10px;color:var(--muted)}
+.pl .pl-today{background:#e6f5e6}
+.pl td.pl-book{padding:0;text-align:left}
+.pl .pl-inner{background:#35568a;color:#fff;border-radius:5px;margin:3px;padding:4px 7px;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default}
+.pl .pl-soft_locked .pl-inner{background:#c99a3a}
+.donut{width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--brand) 0 100%);display:grid;place-items:center}
+.donut .hole{width:74px;height:74px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:12px;color:var(--muted);text-align:center}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.admin-layout{grid-template-columns:1fr}.admin-side{display:flex;overflow-x:auto;gap:6px}.admin-side .grp{display:none}}
+@media(max-width:820px){.searchbox{grid-template-columns:1fr}.two-col{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.hero h1{font-size:34px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const CUR='€';
+const PARK_PRICE=15;
+const UNITS=[
+ {id:'u1',name:'Ringstrasse Studio',description:'A bright, compact studio steps from the historic Ring boulevard. Perfect for a couple exploring the city.',maxGuests:2,basePricePerNight:95,address:'Universitätsring 4, 1010 Vienna',photo:'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=70'},
+ {id:'u2',name:'Belvedere Apartment',description:'Elegant one-bedroom with a small balcony near the Belvedere gardens. Quiet, classic, comfortable.',maxGuests:3,basePricePerNight:130,address:'Prinz-Eugen-Strasse 12, 1030 Vienna',photo:'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=900&q=70'},
+ {id:'u3',name:'Naschmarkt Loft',description:'Spacious loft above the lively Naschmarkt. High ceilings, plenty of light, room for the whole family.',maxGuests:5,basePricePerNight:180,address:'Linke Wienzeile 40, 1060 Vienna',photo:'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=70'},
+ {id:'u4',name:'Schönbrunn Retreat',description:'Calm two-bedroom near Schönbrunn Palace, with a leafy courtyard view. A restful base outside the centre.',maxGuests:4,basePricePerNight:150,address:'Grünbergstrasse 7, 1120 Vienna',photo:'https://images.unsplash.com/photo-1560185007-cde436f6a4d0?auto=format&fit=crop&w=900&q=70'}
+];
+const SEASONAL=[{unitId:'u2',from:'2026-06-01',to:'2026-08-31',price:165},{unitId:'u3',from:'2026-12-01',to:'2026-12-27',price:240}];
+const CODES=[{code:'WELCOME10',type:'percent',value:10,from:'2026-01-01',to:'2026-12-31',minNights:2},{code:'STAY50',type:'fixed',value:50,from:'2026-01-01',to:'2026-12-31',minNights:3}];
+
+const D=s=>new Date(s+'T00:00:00');
+const nights=(a,b)=>Math.round((D(b)-D(a))/86400000);
+const overlap=(ai,ao,bi,bo)=>D(ai)<D(bo)&&D(ao)>D(bi);
+const iso=off=>{const d=new Date();d.setDate(d.getDate()+off);return d.toISOString().slice(0,10)};
+const TODAY=iso(0);
+const fmt=s=>s?D(s).toLocaleDateString(LOCALE(),{day:'numeric',month:'short',year:'numeric'}):'';
+const fmtShort=s=>s?D(s).toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit'}):'';
+const getUnit=id=>UNITS.find(u=>u.id===id);
+function nightly(u,day){for(const r of SEASONAL){if(r.unitId===u.id&&D(day)>=D(r.from)&&D(day)<=D(r.to))return r.price}return u.basePricePerNight}
+function priceForStay(u,ci,co){let t=0,c=D(ci),e=D(co);while(c<e){t+=nightly(u,c.toISOString().slice(0,10));c.setDate(c.getDate()+1)}return t}
+function comboPrice(ids,ci,co){return ids.reduce((s,id)=>s+priceForStay(getUnit(id),ci,co),0)}
+function validateDiscount(codeStr,n,sub){const code=(codeStr||'').trim().toUpperCase();if(!code)return{ok:false,reason:L('Enter a code.','Bitte Code eingeben.')};const dc=CODES.find(c=>c.code===code);if(!dc||dc.active===false)return{ok:false,reason:L('This code is not valid.','Dieser Code ist ungültig.')};const now=new Date();if(now<D(dc.from)||now>D(dc.to))return{ok:false,reason:L('This code has expired.','Dieser Code ist abgelaufen.')};if(n<dc.minNights)return{ok:false,reason:L('This code needs at least '+dc.minNights+' nights.','Dieser Code erfordert mindestens '+dc.minNights+' Nächte.')};const amount=dc.type==='percent'?Math.round(sub*dc.value/100):Math.min(dc.value,sub);return{ok:true,code:dc.code,amount,label:dc.type==='percent'?dc.value+'%'+L(' off',' Rabatt'):CUR+dc.value+L(' off',' Rabatt')}}
+
+const KEY='vienna-stay-bookings-v2';
+const loadB=()=>{try{return JSON.parse(localStorage.getItem(KEY))||null}catch(e){return null}};
+const saveB=b=>localStorage.setItem(KEY,JSON.stringify(b));
+const makeRef=()=>'VS-'+Math.random().toString(36).slice(2,7).toUpperCase();
+const blocks=b=>b.status==='confirmed'||(b.status==='soft_locked'&&new Date(b.lockExpiresAt)>new Date());
+const unitBusy=(uid,ci,co,ex)=>bookings.some(b=>b.id!==ex&&blocks(b)&&b.unitIds.includes(uid)&&overlap(ci,co,b.checkIn,b.checkOut));
+const availableUnits=(ci,co)=>UNITS.filter(u=>!unitBusy(u.id,ci,co));
+function buildOptions(ci,co,guests){
+ const avail=availableUnits(ci,co);
+ const singles=avail.filter(u=>u.maxGuests>=guests).sort((a,b)=>priceForStay(a,ci,co)-priceForStay(b,ci,co));
+ if(singles.length)return singles.map(u=>({type:'single',unitIds:[u.id],units:[u],capacity:u.maxGuests,total:priceForStay(u,ci,co)}));
+ const sorted=[...avail].sort((a,b)=>b.maxGuests-a.maxGuests);
+ const chosen=[];let cap=0;
+ for(const u of sorted){chosen.push(u);cap+=u.maxGuests;if(cap>=guests)break}
+ if(cap>=guests)return[{type:'combo',unitIds:chosen.map(u=>u.id),units:chosen,capacity:cap,total:chosen.reduce((s,u)=>s+priceForStay(u,ci,co),0)}];
+ return[];
+}
+
+function seed(){
+ const mk=(unitIds,ci,co,guests,name,email,status)=>{const n=nights(ci,co);const sub=comboPrice(unitIds,ci,co);return{id:'seed'+Math.random().toString(36).slice(2,8),ref:makeRef(),status,lockExpiresAt:null,createdAt:new Date().toISOString(),unitIds,checkIn:ci,checkOut:co,nights:n,guests,subtotal:sub,discountCode:null,discountAmount:0,total:sub,guestName:name,guestEmail:email,guestPhone:'+43 660 000000',paidAt:new Date().toISOString()}};
+ return[
+  mk(['u2'],iso(0),iso(3),3,'Anna Weber','anna@example.com','confirmed'),
+  mk(['u1'],iso(-2),iso(0),2,'Liam Murphy','liam@example.com','confirmed'),
+  mk(['u4'],iso(5),iso(9),4,'Sofia Rossi','sofia@example.com','confirmed'),
+  mk(['u3'],iso(9),iso(13),5,'The Nguyen Family','nguyen@example.com','confirmed'),
+  mk(['u3','u4'],iso(18),iso(22),8,'Cohen Group','cohen@example.com','confirmed'),
+  mk(['u1'],iso(-12),iso(-9),2,'Emma Schmidt','emma@example.com','confirmed'),
+  mk(['u2'],iso(25),iso(28),2,'Noah Becker','noah@example.com','cancelled')
+ ];
+}
+let bookings=[];
+/* ===== SUPABASE (live shared data) ===== */
+const SB_URL='https://rsqpcyuyoizakuxdevph.supabase.co/rest/v1';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzcXBjeXV5b2l6YWt1eGRldnBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0ODU0NTQsImV4cCI6MjEwMzA2MTQ1NH0.9PmOR8WBOma2LTQ6TG3iYeOSeXJ54ZAjk5sSm0z1ULg';
+const SB_H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+const SB_BASE=SB_URL.replace('/rest/v1','');
+let SB_TOKEN=null; /* manager session token; guests stay on the public key */
+function sbH(extra){return Object.assign({apikey:SB_KEY,Authorization:'Bearer '+(SB_TOKEN||SB_KEY),'Content-Type':'application/json'},extra||{})}
+async function sbGet(q){try{const r=await fetch(SB_URL+'/'+q,{headers:sbH()});return r.ok?await r.json():[]}catch(e){return[]}}
+function sbInsert(t,row){return fetch(SB_URL+'/'+t,{method:'POST',headers:sbH({Prefer:'return=minimal'}),body:JSON.stringify(row)}).catch(function(){})}
+function sbPatch(t,col,val,patch){return fetch(SB_URL+'/'+t+'?'+col+'=eq.'+encodeURIComponent(val),{method:'PATCH',headers:sbH({Prefer:'return=minimal'}),body:JSON.stringify(patch)}).catch(function(){})}
+function sbDelete(t,col,val){return fetch(SB_URL+'/'+t+'?'+col+'=eq.'+encodeURIComponent(val),{method:'DELETE',headers:sbH()}).catch(function(){})}
+function sendMail(id,type){return fetch(SB_URL+'/rpc/send_booking_email',{method:'POST',headers:sbH(),body:JSON.stringify({p_id:id,p_type:type})}).catch(function(){})}
+/* every guest-side write now goes through a checked server function */
+async function sbRpc(fn,args){try{const r=await fetch(SB_URL+'/rpc/'+fn,{method:'POST',headers:sbH(),body:JSON.stringify(args||{})});if(!r.ok)return{ok:false,error:'network'};return await r.json()}catch(e){return{ok:false,error:'network'}}}
+const uFromDb=u=>({id:u.id,name:u.name,description:u.description,maxGuests:u.max_guests,basePricePerNight:Number(u.base_price_per_night),address:u.address,photo:u.photo,active:u.active,lat:(u.lat!=null?Number(u.lat):null),lng:(u.lng!=null?Number(u.lng):null)});
+const sFromDb=r=>({id:r.id,unitId:r.unit_id,from:r.from_date,to:r.to_date,price:Number(r.price)});
+const cFromDb=c=>({code:c.code,type:c.type,value:Number(c.value),from:c.from_date,to:c.to_date,minNights:c.min_nights,active:c.active});
+const bFromDb=b=>({id:b.id,ref:b.ref,status:b.status,unitIds:b.unit_ids||[],checkIn:b.check_in,checkOut:b.check_out,nights:b.nights,guests:b.guests,subtotal:Number(b.subtotal),discountCode:b.discount_code,discountAmount:Number(b.discount_amount||0),total:Number(b.total),guestName:b.guest_name,guestEmail:b.guest_email,guestPhone:b.guest_phone,source:b.source,lockExpiresAt:b.lock_expires_at,createdAt:b.created_at,paidAt:b.paid_at,cancelledAt:b.cancelled_at,extrasSel:b.extras||[],extrasTotal:Number(b.extras_total||0)});
+const bToDb=b=>({id:b.id,ref:b.ref,status:b.status,unit_ids:b.unitIds,check_in:b.checkIn,check_out:b.checkOut,nights:b.nights,guests:b.guests,subtotal:b.subtotal,discount_code:b.discountCode||null,discount_amount:b.discountAmount||0,total:b.total,guest_name:b.guestName||null,guest_email:b.guestEmail||null,guest_phone:b.guestPhone||null,source:b.source||'DIRECT',lock_expires_at:b.lockExpiresAt});
+async function reloadUnits(){const u=await sbGet('units?select=*&order=id');if(u.length){UNITS.length=0;u.map(uFromDb).forEach(x=>UNITS.push(x))}}
+async function reloadSeasons(){const s=await sbGet('seasonal_rates?select=*&order=id');SEASONAL.length=0;s.map(sFromDb).forEach(x=>SEASONAL.push(x))}
+async function reloadCodes(){const c=await sbGet('discount_codes?select=*&order=code');if(c.length){CODES.length=0;c.map(cFromDb).forEach(x=>CODES.push(x))}}
+/* Public visitors only ever see WHICH dates are taken - never who booked them. */
+async function reloadBusy(){const rows=await sbGet('public_busy?select=*');bookings.length=0;(rows||[]).forEach(function(r){bookings.push({id:null,ref:null,status:'confirmed',unitIds:r.unit_ids||[],checkIn:r.check_in,checkOut:r.check_out})})}
+/* Manager cockpit only - requires a signed-in manager. */
+async function reloadBookings(){const b=await sbGet('bookings?select=*');bookings.length=0;b.map(bFromDb).forEach(x=>bookings.push(x))}
+let EXTRAS=[];
+async function reloadExtras(){const e=await sbGet('extras?select=*&order=sort,id');EXTRAS=e||[]}
+function activeExtras(){return EXTRAS.filter(function(e){return e.active!==false})}
+function extraLabel(e){return L(e.name_en,e.name_de||e.name_en)}
+function selExtras(n){return activeExtras().filter(function(e){return state.extras[e.id]}).map(function(e){return {id:e.id,name_en:e.name_en,name_de:e.name_de,per:e.per,price:Number(e.price),amount:(e.per==='night'?Number(e.price)*n:Number(e.price))}})}
+function extrasSum(n){return selExtras(n).reduce(function(s,e){return s+e.amount},0)}
+let EMAILS=[];
+async function reloadEmails(){const e=await sbGet('email_templates?select=*&order=sort,id');EMAILS=e||[]}
+function fillTemplate(txt,b){if(!txt)return '';const u=b?unitsLabel(b):'';return String(txt).replace(/\{guest\}/g,(b&&b.guestName)||'').replace(/\{apartment\}/g,u).replace(/\{checkin\}/g,b?fmt(b.checkIn):'').replace(/\{checkout\}/g,b?fmt(b.checkOut):'').replace(/\{nights\}/g,b?b.nights:'').replace(/\{guests\}/g,b?b.guests:'').replace(/\{reference\}/g,(b&&b.ref)||'').replace(/\{total\}/g,b?CUR+b.total:'')}
+async function loadAll(){await Promise.all([reloadUnits(),reloadSeasons(),reloadExtras()]);if(adminAuthed)render()}
+/* Discount codes and email templates are manager data - loaded only after sign-in. */
+async function loadManagerData(){await Promise.all([reloadBookings(),reloadCodes(),reloadEmails(),reloadFaqs()]);render()}
+
+const state={screen:'home',checkIn:iso(14),checkOut:iso(17),guests:2,selectedUnitIds:null,bookingId:null,guest:{name:'',email:'',phone:''},promo:'',discount:null,promoError:'',cancelId:null,mb:{email:'',ref:'',searched:false,results:[]},adminTab:'dashboard',adminFilter:'all',adminSearch:'',auser:'',apass:'',adminErr:'',pickerOpen:null,pickerMonth:null,chatOpen:false,chatMsgs:[],extras:{},emailEdit:null,emailDraft:null,lang:(function(){try{return localStorage.getItem('vs-lang')||'en'}catch(e){return 'en'}})()};
+let adminAuthed=false;
+const L=(en,de)=>state.lang==='de'?de:en;
+function setLang(l){state.lang=l;try{localStorage.setItem('vs-lang',l)}catch(e){}render()}
+const LOCALE=()=>state.lang==='de'?'de-DE':'en-GB';
+const MONTHS={en:['January','February','March','April','May','June','July','August','September','October','November','December'],de:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']};
+const WEEKD={en:['Mo','Tu','We','Th','Fr','Sa','Su'],de:['Mo','Di','Mi','Do','Fr','Sa','So']};
+function openPicker(field){if(state.pickerOpen===field){state.pickerOpen=null;render();return}state.pickerOpen=field;const base=state[field]?D(state[field]):new Date();state.pickerMonth=new Date(base.getFullYear(),base.getMonth(),1);render()}
+function pickerNav(delta){const d=state.pickerMonth;state.pickerMonth=new Date(d.getFullYear(),d.getMonth()+delta,1);render()}
+function pickDate(field,ds){state[field]=ds;if(field==='checkIn'&&state.checkOut<=state.checkIn){const co=D(ds);co.setDate(co.getDate()+2);state.checkOut=co.toISOString().slice(0,10)}state.pickerOpen=null;render()}
+function calendarHTML(field){
+ const cur=state.pickerMonth,y=cur.getFullYear(),m=cur.getMonth();
+ const startDow=(new Date(y,m,1).getDay()+6)%7,daysIn=new Date(y,m+1,0).getDate(),todayStr=iso(0);
+ let cells='';for(let i=0;i<startDow;i++)cells+='<div class="cd empty"></div>';
+ for(let d=1;d<=daysIn;d++){const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');const disabled=field==='checkIn'?ds<todayStr:ds<=state.checkIn;const sel=ds===state[field]?' sel':'';cells+=`<div class="cd${sel}${disabled?' dis':''}" ${disabled?'':`onclick="event.stopPropagation();pickDate('${field}','${ds}')"`}>${d}</div>`}
+ const wk=WEEKD[state.lang].map(w=>`<div class="cwd">${w}</div>`).join('');
+ return `<div class="cal-pop" onclick="event.stopPropagation()"><div class="cal-head"><button type="button" onclick="event.stopPropagation();pickerNav(-1)">‹</button><span>${MONTHS[state.lang][m]} ${y}</span><button type="button" onclick="event.stopPropagation();pickerNav(1)">›</button></div><div class="cal-grid">${wk}${cells}</div></div>`;
+}
+let tick=null;
+const root=document.getElementById('root');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function go(s){state.screen=s;window.scrollTo(0,0);render()}
+function mmss(s){const m=Math.floor(s/60);return m+':'+String(s%60).padStart(2,'0')}
+const unitsLabel=b=>b.unitIds.map(id=>getUnit(id).name).join(' + ');
+
+function header(){return `<header class="site-header"><div class="container">
+ <div class="logo" onclick="go('home')"><img src="logo.svg" class="logo-mark-img" alt="Vienna Stay Apartments"><span class="logo-text"><span class="l1">VIENNA STAY</span><span class="l2">Apartments</span></span></div>
+ <nav class="nav"><a onclick="go('home')">${L('Home','Startseite')}</a><a onclick="openMB()">${L('My Bookings','Meine Buchungen')}</a><a class="ig-link" href="https://www.instagram.com/viennastayapartments" target="_blank" rel="noopener noreferrer" title="Instagram" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1.15" fill="currentColor" stroke="none"/></svg></a><span class="langsw"><a onclick="setLang('en')" class="${state.lang==='en'?'on':''}">EN</a><a onclick="setLang('de')" class="${state.lang==='de'?'on':''}">DE</a></span></nav></div></header>`}
+function footer(){return `<footer class="site-footer"><div class="container"><span>Vienna Stay Apartments</span><span><a class="ig-link" href="https://www.instagram.com/viennastayapartments" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1.15" fill="currentColor" stroke="none"/></svg><span>@viennastayapartments</span></a></span><span><a onclick="openAdmin()">${L('Manager area','Verwaltung')} →</a></span></div></footer>`}
+
+function mgrShell(inner){return `<header class="site-header"><div class="container"><div class="logo"><img src="logo.svg" class="logo-mark-img" alt=""><span class="logo-text"><span class="l1">VIENNA STAY</span><span class="l2">Manager</span></span></div></div></header><main>${inner}</main>`}
+function render(){
+ if(tick){clearInterval(tick);tick=null}
+ if(state.screen==='admin'&&adminAuthed){root.innerHTML=adminLayout();return}
+ root.innerHTML=mgrShell(adminLoginS());
+}
+
+/* HOME */
+function homeS(){
+ const n=nights(state.checkIn,state.checkOut),short=n>0&&n<2;
+ return `<section class="hero"><div class="container">
+  <h1>${L('Your home in the heart of Vienna','Ihr Zuhause im Herzen Wiens')}</h1><p>${L('Hand-picked apartments for a comfortable, effortless stay.','Handverlesene Apartments für einen komfortablen, unkomplizierten Aufenthalt.')}</p>
+  <div class="searchbox">
+   <div class="field" style="position:relative"><label>${L('Check-in','Anreise')}</label><div class="datebox" onclick="event.stopPropagation();openPicker('checkIn')"><span>${fmt(state.checkIn)}</span><span class="cal-ic">📅</span></div>${state.pickerOpen==='checkIn'?calendarHTML('checkIn'):''}</div>
+   <div class="field" style="position:relative"><label>${L('Check-out','Abreise')}</label><div class="datebox" onclick="event.stopPropagation();openPicker('checkOut')"><span>${fmt(state.checkOut)}</span><span class="cal-ic">📅</span></div>${state.pickerOpen==='checkOut'?calendarHTML('checkOut'):''}</div>
+   <div class="field"><label>${L('Guests','Gäste')}</label><input type="number" min="1" value="${state.guests}" oninput="state.guests=Math.max(1,parseInt(this.value)||1)"></div>
+   <button class="btn" onclick="doSearch()" ${n<2?'disabled':''}>${L('Search','Suchen')} →</button>
+  </div>
+  <div id="nightsInfo">${n>=2?`<div class="nights-pill">${n} ${L('nights','Nächte')}</div>`:''}${short?`<div class="helper">${L('Minimum stay: 2 nights.','Mindestaufenthalt: 2 Nächte.')}</div>`:''}</div>
+ </div></section>
+ <section class="section container"><h2>${L('Room for everyone','Platz für alle')}</h2><p class="sub">${L("Travelling as a big group? Tell us how many you are — if one apartment isn't enough, we'll combine several into one booking, at one price.",'Reisen Sie mit einer großen Gruppe? Sagen Sie uns, wie viele Sie sind – reicht ein Apartment nicht, kombinieren wir mehrere zu einer Buchung, zu einem Preis.')}</p>
+  <div class="grid">
+   <div class="card pad"><h3>${L('Central locations','Zentrale Lage')}</h3><p class="muted">${L("Every apartment is a short walk from Vienna's landmarks and cafés.",'Jedes Apartment liegt nur wenige Schritte von Wiens Sehenswürdigkeiten und Cafés entfernt.')}</p></div>
+   <div class="card pad"><h3>${L('Groups welcome','Gruppen willkommen')}</h3><p class="muted">${L('No cap on guests. For larger parties we bundle apartments together automatically.','Keine Begrenzung der Gästezahl. Für größere Gruppen fassen wir Apartments automatisch zusammen.')}</p></div>
+   <div class="card pad"><h3>${L('Simple booking','Einfache Buchung')}</h3><p class="muted">${L("Pick dates and guests, pay once, and you're set — confirmation in seconds.",'Daten und Gäste wählen, einmal bezahlen, fertig – Bestätigung in Sekunden.')}</p></div>
+  </div></section>
+  <section class="section container"><h2>${L('Where our apartments are','Wo unsere Apartments liegen')}</h2><p class="sub">${L('Our apartments across central Vienna — click a pin for details.','Unsere Apartments im Zentrum von Wien — für Details auf eine Markierung klicken.')}</p><iframe src="https://www.google.com/maps/d/embed?mid=1lp7TSlRK3eGL1DHRs6jQFbTigz5sjss&ehbc=2E312F" class="locmap" style="border:0" loading="lazy"></iframe></section>`
+}
+function refreshNights(){const n=nights(state.checkIn,state.checkOut),el=document.getElementById('nightsInfo'),btn=document.querySelector('.searchbox .btn');if(btn)btn.disabled=n<2;if(el)el.innerHTML=(n>=2?`<div class="nights-pill">${n} ${L('nights','Nächte')}</div>`:'')+(n>0&&n<2?`<div class="helper">${L('Minimum stay: 2 nights.','Mindestaufenthalt: 2 Nächte.')}</div>`:'')}
+async function doSearch(){if(nights(state.checkIn,state.checkOut)<2)return;await (adminAuthed?reloadBookings():reloadBusy());go('results')}
+
+/* RESULTS */
+function resultsS(){
+ const n=nights(state.checkIn,state.checkOut);
+ const opts=buildOptions(state.checkIn,state.checkOut,state.guests);
+ let cards=opts.map(o=>{
+  if(o.type==='single'){const u=o.units[0];return `<div class="card unit-card"><img src="${u.photo}" alt=""><div class="body"><h3>${esc(u.name)}</h3><p class="desc">${esc(u.description)}</p><div class="muted" style="font-size:13px;margin-bottom:10px">${L('Sleeps up to','Bis zu')} ${u.maxGuests} ${L('','Gäste')}</div><div class="price-row"><span class="per">${CUR}${Math.round(o.total/n)} / ${L('night','Nacht')}</span><span class="total">${CUR}${o.total} <span class="per">${L('total','gesamt')}</span></span></div><button class="btn btn-block" onclick="openOption('${o.unitIds.join(',')}')">${L('View Details','Details ansehen')}</button></div></div>`}
+  const imgs=o.units.slice(0,2).map(u=>`<img src="${u.photo}" alt="">`).join('');
+  return `<div class="card unit-card"><div class="combo-imgs">${imgs}</div><div class="body"><span class="combo-badge">Kombination · ${o.units.length} Apartments</span><h3>${L('Group stay for','Gruppenaufenthalt für')} ${state.guests}</h3><div style="margin-bottom:10px">${o.units.map(u=>`<span class="chip">${esc(u.name)} · ${L('sleeps','bis zu')} ${u.maxGuests}</span>`).join('')}</div><div class="muted" style="font-size:13px;margin-bottom:10px">${L('Together they sleep up to '+o.capacity+' guests — booked as one reservation.','Zusammen bis zu '+o.capacity+' Gäste – als eine einzige Buchung.')}</div><div class="price-row"><span class="per">${o.units.length} Apartments</span><span class="total">${CUR}${o.total} <span class="per">${L('total','gesamt')}</span></span></div><button class="btn btn-block" onclick="openOption('${o.unitIds.join(',')}')">${L('View Combination','Kombination ansehen')}</button></div></div>`
+ }).join('');
+ return `<section class="section container">
+  <div class="summary-bar"><div><strong>${fmt(state.checkIn)} → ${fmt(state.checkOut)}</strong><span class="muted"> · ${n} ${L('nights','Nächte')} · ${state.guests} ${L('guests','Gäste')}</span></div><button class="btn btn-ghost" onclick="go('home')">${L('Change Search','Suche ändern')}</button></div>
+  <h2>${opts.length&&opts[0].type==='combo'?L('Best combination for your group','Beste Kombination für Ihre Gruppe'):L('Available apartments','Verfügbare Apartments')}</h2>
+  <p class="sub">${opts.length===0?'':opts[0].type==='combo'?L('No single apartment fits '+state.guests+' guests for these dates, so we combined a few — one booking, one price.','Kein einzelnes Apartment fasst '+state.guests+' Gäste an diesen Daten – daher haben wir mehrere kombiniert: eine Buchung, ein Preis.'):(opts.length+' '+L('apartments fit','Apartments für')+' '+state.guests+' '+L('guests.','Gäste.'))}</p>
+  ${opts.length===0?`<div class="empty"><div class="icon">🗓️</div><h3>${L('Nothing available for '+state.guests+' guests on these dates','Nichts verfügbar für '+state.guests+' Gäste an diesen Daten')}</h3><p>${L('Try different dates, or fewer guests.','Versuchen Sie andere Daten oder weniger Gäste.')}</p><button class="btn" onclick="go('home')">${L('Change Search','Suche ändern')}</button></div>`:`<div class="grid">${cards}</div>`}
+ </section>`
+}
+function openOption(csv){state.selectedUnitIds=csv.split(',');go('details')}
+
+/* DETAILS */
+function detailsS(){
+ const ids=state.selectedUnitIds,n=nights(state.checkIn,state.checkOut),total=comboPrice(ids,state.checkIn,state.checkOut),isCombo=ids.length>1;
+ const cap=ids.reduce((s,id)=>s+getUnit(id).maxGuests,0);
+ const main=getUnit(ids[0]);
+ const desc=isCombo?`<h2 style="margin-top:20px">${L('Combination for '+state.guests+' guests','Kombination für '+state.guests+' Gäste')}</h2><p class="muted">${ids.length} ${L('apartments · sleeps up to','Apartments · bis zu')} ${cap}</p>`+ids.map(id=>{const u=getUnit(id);return `<div class="card pad" style="margin-bottom:10px"><strong>${esc(u.name)}</strong> <span class="muted">· ${esc(u.address)} · ${L('sleeps','bis zu')} ${u.maxGuests}</span><p class="muted" style="margin:6px 0 0">${esc(u.description)}</p></div>`}).join(''):`<h2 style="margin-top:20px">${esc(main.name)}</h2><p class="muted">📍 ${esc(main.address)} · ${L('Sleeps','Bis zu')} ${main.maxGuests}</p><p>${esc(main.description)}</p>`;
+ return `<section class="section container"><a class="muted" style="cursor:pointer" onclick="go('results')">← ${L('Back to results','Zurück zu den Ergebnissen')}</a>
+  <div class="two-col" style="margin-top:16px">
+   <div><img class="gallery" src="${main.photo}" alt="">${desc}</div>
+   <div class="card pad"><div class="stack">
+    <div><div class="muted">${L('Your dates','Ihre Daten')}</div><strong>${fmt(state.checkIn)} → ${fmt(state.checkOut)}</strong><div class="muted">${n} ${L('nights','Nächte')} · ${state.guests} ${L('guests','Gäste')}</div></div>
+    <div class="divider"></div>
+    <div class="breakdown">${ids.map(id=>{const u=getUnit(id);const p=priceForStay(u,state.checkIn,state.checkOut);return `<div class="line"><span>${esc(u.name)}</span><span>${CUR}${p}</span></div>`}).join('')}<div class="line grand"><span>${L('Total','Gesamt')}</span><span>${CUR}${total}</span></div></div>
+    <button class="btn btn-block" onclick="startBooking()">${isCombo?L('Book Combination','Kombination buchen'):L('Book Now','Jetzt buchen')}</button>
+    <p class="muted" style="font-size:13px">${L("You won't be charged until the next step.",'Sie zahlen erst im nächsten Schritt.')}</p>
+   </div></div>
+  </div></section>`
+}
+async function startBooking(){
+ const ids=state.selectedUnitIds;
+ const taken=L('Sorry — one of these apartments was just taken for these dates.','Leider wurde eines dieser Apartments gerade für diese Daten gebucht.');
+ /* The server re-checks availability and prices the stay itself. */
+ const res=await sbRpc('vs_create_hold',{p_units:ids,p_ci:state.checkIn,p_co:state.checkOut,p_guests:state.guests});
+ if(!res||!res.ok){
+  if(res&&res.error==='taken'){alert(taken);await reloadBusy();go('results');return}
+  alert(L('Sorry, we could not start this booking. Please try again.','Die Buchung konnte nicht gestartet werden. Bitte erneut versuchen.'));return}
+ const b={id:res.id,ref:res.ref,status:'soft_locked',lockExpiresAt:res.lock_expires_at,createdAt:new Date().toISOString(),unitIds:ids,checkIn:state.checkIn,checkOut:state.checkOut,nights:res.nights,guests:state.guests,subtotal:Number(res.subtotal),total:Number(res.total),discountAmount:0,discountCode:null,extrasSel:[],extrasTotal:0};
+ bookings.push(b);
+ state.bookingId=b.id;state.guest={name:'',email:'',phone:''};state.promo='';state.discount=null;state.promoError='';state.extras={};
+ go('booking');
+}
+
+/* BOOKING */
+function currentB(){return bookings.find(b=>b.id===state.bookingId)}
+function remainSecs(){const b=currentB();return b?Math.round((new Date(b.lockExpiresAt)-new Date())/1000):0}
+function bookingS(){
+ const b=currentB(),n=b.nights,sub=b.subtotal,expired=remainSecs()<=0,exTot=extrasSum(n),total=sub-(state.discount?state.discount.amount:0)+exTot;
+ const label=unitsLabel(b);
+ if(expired)return `<section class="section container"><div class="summary-bar"><div><strong>${esc(label)}</strong></div><span class="timer expired">⏳ ${L('Hold expired','Reservierung abgelaufen')}</span></div><div class="stack"><div class="notice">${L('Your hold has expired. Please search again.','Ihre Reservierung ist abgelaufen. Bitte erneut suchen.')}</div><button class="btn" onclick="go('home')">${L('Search Again','Erneut suchen')}</button></div></section>`;
+ return `<section class="section container">
+  <div class="summary-bar"><div><strong>${esc(label)}</strong> <span class="muted">· ${fmt(b.checkIn)} → ${fmt(b.checkOut)} · ${n} ${L('nights','Nächte')} · ${b.guests} ${L('guests','Gäste')}</span></div><span class="timer" id="tmr">⏳ ${L('Held for','Reserviert für')} ${mmss(remainSecs())}</span></div>
+  <div class="two-col">
+   <div class="card pad"><h3 style="margin-top:0">${L('Your details','Ihre Angaben')}</h3>
+    <div class="form-grid">
+     <div class="full"><label class="lbl">${L('Full name','Vollständiger Name')}</label><input class="ctrl" value="${esc(state.guest.name)}" oninput="state.guest.name=this.value;syncContinue()"></div>
+     <div><label class="lbl">${L('Email','E-Mail')}</label><input class="ctrl" type="email" value="${esc(state.guest.email)}" oninput="state.guest.email=this.value;syncContinue()"></div>
+     <div><label class="lbl">${L('Phone','Telefon')}</label><input class="ctrl" value="${esc(state.guest.phone)}" oninput="state.guest.phone=this.value;syncContinue()"></div>
+    </div>
+    <div class="divider"></div>
+    <label class="lbl">${L('Promo code','Rabattcode')}</label>
+    <div class="promo-row"><input value="${esc(state.promo)}" placeholder="${L('e.g. WELCOME10','z. B. WELCOME10')}" oninput="state.promo=this.value"><button class="btn btn-ghost" onclick="applyPromo()">${L('Apply','Anwenden')}</button></div>
+    ${state.promoError?`<div class="inline-error">${esc(state.promoError)}</div>`:''}
+    ${state.discount?`<div class="inline-ok">✓ ${esc(state.discount.label)} ${L('applied.','angewendet.')}</div>`:''}
+    ${activeExtras().length?`<div class="divider"></div><label class="lbl">${L('Add extras','Extras hinzufügen')}</label>${activeExtras().map(e=>`<label class="park-opt" style="margin-top:8px"><input type="checkbox" ${state.extras[e.id]?'checked':''} onclick="state.extras[${e.id}]=!state.extras[${e.id}];render()"><span>${esc(extraLabel(e))} — ${CUR}${e.price}/${e.per==='night'?L('night','Nacht'):L('stay','Aufenthalt')}</span></label>`).join('')}`:''}
+   </div>
+   <div class="card pad"><h3 style="margin-top:0">${L('Price summary','Preisübersicht')}</h3>
+    <div class="breakdown">
+     ${b.unitIds.map(id=>{const u=getUnit(id);const p=priceForStay(u,b.checkIn,b.checkOut);return `<div class="line"><span>${esc(u.name)}</span><span>${CUR}${p}</span></div>`}).join('')}
+     <div class="line"><span class="muted">${L('Subtotal','Zwischensumme')} (${n} ${L('nights','Nächte')})</span><span class="muted">${CUR}${sub}</span></div>
+     ${state.discount?`<div class="line discount"><span>${L('Discount','Rabatt')} (${esc(state.discount.code)})</span><span>−${CUR}${state.discount.amount}</span></div>`:''}
+     ${selExtras(n).map(e=>`<div class="line"><span>${esc(extraLabel(e))}</span><span>${CUR}${e.amount}</span></div>`).join('')}
+     <div class="line grand"><span>${L('Total','Gesamt')}</span><span>${CUR}${total}</span></div>
+    </div>
+    <button class="btn btn-block" id="contBtn" style="margin-top:16px" onclick="toPayment()" ${(state.guest.name&&state.guest.email&&state.guest.phone)?'':'disabled'}>${L('Continue to Payment','Weiter zur Zahlung')} →</button>
+    <p class="muted" style="font-size:13px;margin-bottom:0">${L('Paid in full now. No refund on cancellation.','Vollständige Zahlung jetzt. Keine Rückerstattung bei Stornierung.')}</p>
+   </div>
+  </div></section>`
+}
+function syncContinue(){const btn=document.getElementById('contBtn');if(btn)btn.disabled=!(state.guest.name&&state.guest.email&&state.guest.phone)}
+/* The code list never reaches the browser; the server answers yes/no. */
+function promoError(res){
+ if(res&&res.error==='expired')return L('This code has expired.','Dieser Code ist abgelaufen.');
+ if(res&&res.error==='min_nights')return L('This code needs at least '+res.min_nights+' nights.','Dieser Code erfordert mindestens '+res.min_nights+' Nächte.');
+ if(res&&res.error==='network')return L('Could not check the code. Please try again.','Der Code konnte nicht geprüft werden. Bitte erneut versuchen.');
+ return L('This code is not valid.','Dieser Code ist ungültig.');
+}
+async function applyPromo(){
+ const b=currentB();
+ if(!state.promo.trim()){state.discount=null;state.promoError=L('Enter a code.','Bitte Code eingeben.');render();return}
+ const res=await sbRpc('vs_check_promo',{p_code:state.promo,p_nights:b.nights,p_subtotal:b.subtotal});
+ if(res&&res.ok){state.discount={ok:true,code:res.code,amount:Number(res.amount),label:res.type==='percent'?res.value+'%'+L(' off',' Rabatt'):CUR+res.value+L(' off',' Rabatt')};state.promoError=''}
+ else{state.discount=null;state.promoError=promoError(res)}
+ render();
+}
+async function toPayment(){
+ const b=currentB();
+ const extraIds=activeExtras().filter(function(e){return state.extras[e.id]}).map(function(e){return String(e.id)});
+ /* The server recomputes every amount from its own price list. */
+ const res=await sbRpc('vs_set_guest',{p_id:b.id,p_name:state.guest.name,p_email:state.guest.email,p_phone:state.guest.phone,p_code:state.discount?state.discount.code:null,p_extra_ids:extraIds});
+ if(!res||!res.ok){render();return}
+ b.guestName=state.guest.name;b.guestEmail=state.guest.email;b.guestPhone=state.guest.phone;
+ b.discountCode=res.discount_code;b.discountAmount=Number(res.discount_amount||0);
+ b.extrasSel=res.extras||[];b.extrasTotal=Number(res.extras_total||0);b.total=Number(res.total);
+ go('payment');
+}
+
+/* PAYMENT */
+function paymentS(){
+ const b=currentB(),expired=remainSecs()<=0,label=unitsLabel(b);
+ if(expired)return `<section class="section container"><div class="summary-bar"><div><strong>${L('Payment','Zahlung')}</strong></div><span class="timer expired">⏳ ${L('Hold expired','Reservierung abgelaufen')}</span></div><div class="stack"><div class="notice">${L('Your hold expired before payment was completed.','Ihre Reservierung ist vor Abschluss der Zahlung abgelaufen.')}</div><button class="btn" onclick="go('home')">${L('Search Again','Erneut suchen')}</button></div></section>`;
+ return `<section class="section container">
+  <div class="summary-bar"><div><strong>${L('Payment','Zahlung')}</strong> <span class="muted">· ${esc(label)} · ${fmt(b.checkIn)} → ${fmt(b.checkOut)}</span></div><span class="timer" id="tmr">⏳ ${L('Held for','Reserviert für')} ${mmss(remainSecs())}</span></div>
+  <div class="two-col">
+   <div class="card pad"><h3 style="margin-top:0">${L('Card details','Kartendaten')}</h3><p class="muted" style="font-size:13px;margin-top:0">${L('Demo mode — no real card is charged. In the live site this is Stripe.','Demo-Modus – es wird keine echte Karte belastet. Im Live-Betrieb erfolgt dies über Stripe.')}</p>
+    <label class="lbl">${L('Card number','Kartennummer')}</label><input class="ctrl" placeholder="4242 4242 4242 4242">
+    <div class="form-grid" style="margin-top:14px"><div><label class="lbl">${L('Expiry','Gültig bis')}</label><input class="ctrl" placeholder="12 / 28"></div><div><label class="lbl">CVC</label><input class="ctrl" placeholder="123"></div></div>
+    <button class="btn btn-block" id="payBtn" style="margin-top:18px" onclick="pay()">${L('Pay','Zahlen')} ${CUR}${b.total} ${L('Now','jetzt')}</button>
+   </div>
+   <div class="card pad"><h3 style="margin-top:0">${L('Order summary','Bestellübersicht')}</h3>
+    <div class="breakdown"><div class="line"><span>${L('Subtotal','Zwischensumme')}</span><span>${CUR}${b.subtotal}</span></div>${b.discountAmount>0?`<div class="line discount"><span>${L('Discount','Rabatt')} (${esc(b.discountCode)})</span><span>−${CUR}${b.discountAmount}</span></div>`:''}${(b.extrasSel||[]).map(e=>`<div class="line"><span>${esc(extraLabel(e))}</span><span>${CUR}${e.amount}</span></div>`).join('')}<div class="line grand"><span>${L('Total due','Zu zahlen')}</span><span>${CUR}${b.total}</span></div></div>
+    <p class="muted" style="font-size:13px">${L('Paid in full. No refund on cancellation.','Vollständige Zahlung. Keine Rückerstattung bei Stornierung.')}</p>
+   </div>
+  </div></section>`
+}
+async function pay(){
+ if(remainSecs()<=0)return;
+ const btn=document.getElementById('payBtn');btn.disabled=true;btn.textContent=L('Processing…','Wird verarbeitet…');
+ const b=currentB();
+ const res=await sbRpc('vs_confirm',{p_id:b.id});
+ if(!res||!res.ok){
+  btn.disabled=false;btn.textContent=L('Pay now','Jetzt bezahlen');
+  alert(res&&res.error==='taken'?L('Sorry — that apartment was just taken. Your card was not charged.','Leider wurde dieses Apartment gerade gebucht. Es wurde nichts abgebucht.')
+                                :L('Your hold has expired. Please search again.','Ihre Reservierung ist abgelaufen. Bitte erneut suchen.'));
+  render();return}
+ b.status='confirmed';b.paidAt=new Date().toISOString();
+ /* the confirmation email is sent by the server inside vs_confirm */
+ go('confirmation');
+}
+
+/* CONFIRMATION */
+function confirmationS(){
+ const b=currentB(),label=unitsLabel(b);
+ return `<section class="section container"><div class="card pad" style="max-width:620px;margin:0 auto;text-align:center">
+  <div style="font-size:46px">✓</div><h2 style="margin-top:6px">${L('Booking confirmed','Buchung bestätigt')}</h2><p class="muted">${L('A confirmation has been sent to','Eine Bestätigung wurde gesendet an')} ${esc(b.guestEmail)}.</p>
+  <div class="notice" style="background:#eef3ec;border-color:#cfe0cd;color:#3f5f45;text-align:left">${L('Your booking reference:','Ihre Buchungsnummer:')} <strong>${b.ref}</strong><br>${L("Keep this — you'll need it (with your email) to view your booking.",'Bewahren Sie diese auf – Sie benötigen sie (mit Ihrer E-Mail), um Ihre Buchung anzusehen.')}</div>
+  <div class="breakdown" style="text-align:left;margin-top:18px"><div class="line"><span>${b.unitIds.length>1?'Apartments':'Apartment'}</span><strong>${esc(label)}</strong></div><div class="line"><span>${L('Dates','Daten')}</span><span>${fmt(b.checkIn)} → ${fmt(b.checkOut)}</span></div><div class="line"><span>${L('Guests','Gäste')}</span><span>${b.guests}</span></div>${(b.extrasSel||[]).map(e=>`<div class="line"><span>${esc(extraLabel(e))}</span><span>${CUR}${e.amount}</span></div>`).join('')}<div class="line grand"><span>${L('Paid','Bezahlt')}</span><span>${CUR}${b.total}</span></div></div>
+  <div class="divider"></div><div style="text-align:left"><strong>${L('Check-in instructions','Check-in-Hinweise')}</strong><p class="muted" style="margin-top:4px">${L('The address and access details will appear here. (Placeholder — the owner will provide this text.)','Adresse und Zugangsdaten erscheinen hier. (Platzhalter – der Eigentümer stellt diesen Text bereit.)')}</p></div>
+  <button class="btn btn-block" style="margin-top:10px" onclick="openMBfor('${b.guestEmail}','${b.ref}')">${L('View My Bookings','Meine Buchungen ansehen')}</button>
+ </div></section>`
+}
+
+/* MY BOOKINGS */
+function openMB(){go('mybookings')}
+async function openMBfor(email,ref){state.mb={email,ref,searched:false,results:[]};go('mybookings');await mbFind()}
+async function mbFind(){
+ const rows=await sbRpc('vs_lookup',{p_email:state.mb.email,p_ref:state.mb.ref});
+ state.mb.results=Array.isArray(rows)?rows.map(bFromDb):[];
+ state.mb.searched=true;state.cancelId=null;render();
+}
+function mbS(){
+ const rows=state.mb.results.map(b=>{const upcoming=D(b.checkIn)>new Date(),canCancel=b.status==='confirmed'&&upcoming;
+  let extra='';
+  if(canCancel&&state.cancelId!==b.id)extra=`<div class="divider"></div><button class="btn btn-ghost btn-sm" onclick="state.cancelId='${b.id}';render()">${L('Cancel Booking','Buchung stornieren')}</button>`;
+  if(state.cancelId===b.id)extra=`<div class="divider"></div><div class="notice"><strong>${L('Cancelling is final. No refund will be issued for the amount paid ('+CUR+b.total+').','Die Stornierung ist endgültig. Für den gezahlten Betrag ('+CUR+b.total+') erfolgt keine Rückerstattung.')}</strong></div><div style="display:flex;gap:10px;margin-top:12px"><button class="btn btn-danger" onclick="doCancel('${b.id}')">${L('Yes, Cancel Booking','Ja, stornieren')}</button><button class="btn btn-ghost" onclick="state.cancelId=null;render()">${L("Go Back, Don't Cancel",'Zurück, nicht stornieren')}</button></div>`;
+  return `<div class="card pad"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><div><strong>${esc(unitsLabel(b))}</strong>${b.unitIds.length>1?' <span class="combo-badge">Kombination</span>':''}<div class="muted">${fmt(b.checkIn)} → ${fmt(b.checkOut)} · ${b.guests} ${L('guests','Gäste')} · ${L('Ref','Nr.')} ${b.ref}</div></div><span class="badge ${b.status}">${b.status==='confirmed'?L('Confirmed','Bestätigt'):b.status==='cancelled'?L('Cancelled','Storniert'):b.status}</span></div>${extra}</div>`}).join('');
+ return `<section class="section container"><h2>${L('My Bookings','Meine Buchungen')}</h2><p class="sub">${L('Enter the email and booking reference from your confirmation.','Geben Sie die E-Mail und Buchungsnummer aus Ihrer Bestätigung ein.')}</p>
+  <div class="card pad" style="max-width:560px"><div class="form-grid">
+   <div><label class="lbl">${L('Email','E-Mail')}</label><input class="ctrl" value="${esc(state.mb.email)}" oninput="state.mb.email=this.value"></div>
+   <div><label class="lbl">${L('Booking reference','Buchungsnummer')}</label><input class="ctrl" value="${esc(state.mb.ref)}" placeholder="VS-XXXXX" oninput="state.mb.ref=this.value"></div>
+  </div><button class="btn" style="margin-top:14px" onclick="mbFind()">${L('Find My Booking','Buchung finden')}</button></div>
+  ${state.mb.searched&&state.mb.results.length===0?`<div class="empty"><div class="icon">🔍</div><p>${L('No booking found for that email and reference.','Keine Buchung für diese E-Mail und Nummer gefunden.')}</p></div>`:''}
+  <div class="stack" style="margin-top:24px">${rows}</div></section>`
+}
+async function doCancel(id){
+ await sbRpc('vs_cancel',{p_email:state.mb.email,p_ref:state.mb.ref});
+ state.cancelId=null;await mbFind();
+}
+
+/* ===== ADMIN / MANAGER COCKPIT ===== */
+function openAdmin(){if(adminAuthed){state.screen='admin';state.adminTab='dashboard';window.scrollTo(0,0);render();loadManagerData()}else{state.screen='adminlogin';state.adminErr='';window.scrollTo(0,0);render()}}
+function adminLoginS(){return `<section class="section container"><div class="card pad" style="max-width:420px;margin:20px auto">
+ <h2 style="margin-top:0">Manager sign-in</h2><p class="muted">This area is for the property owner only.</p>
+ <label class="lbl">Username</label><input class="ctrl" autocomplete="username" value="${esc(state.auser)}" oninput="state.auser=this.value" onkeydown="if(event.key==='Enter')doAdminLogin()">
+ <label class="lbl" style="margin-top:12px">Password</label><input class="ctrl" type="password" oninput="state.apass=this.value" onkeydown="if(event.key==='Enter')doAdminLogin()">
+ ${state.adminErr?`<div class="inline-error">${esc(state.adminErr)}</div>`:''}
+ <button class="btn btn-block" style="margin-top:16px" onclick="doAdminLogin()">Sign in →</button>
+ <p class="muted" style="font-size:12px;margin-top:14px">Staff access only. This is not the guest website.</p>
+</div></section>`}
+/* Real accounts now - no password lives in this page any more. */
+const MGR_DOMAIN='@vienna-stay.com';
+function mgrEmail(u){const s=(u||'').trim().toLowerCase().replace(/\s+/g,'');return s.indexOf('@')>-1?s:s+MGR_DOMAIN}
+async function doAdminLogin(){
+ state.adminErr='';render();
+ try{
+  const r=await fetch(SB_BASE+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:mgrEmail(state.auser),password:state.apass})});
+  const d=await r.json();
+  if(!r.ok||!d.access_token){state.adminErr='Wrong username or password.';state.apass='';render();return}
+  SB_TOKEN=d.access_token;adminAuthed=true;state.apass='';
+  state.screen='admin';state.adminTab='dashboard';window.scrollTo(0,0);render();
+  loadManagerData();
+ }catch(e){state.adminErr='Could not reach the server. Please try again.';render()}
+}
+function adminLogout(){SB_TOKEN=null;adminAuthed=false;state.auser='';state.apass='';bookings.length=0;state.screen='adminlogin';window.scrollTo(0,0);render()}
+function adminGo(tab){state.adminTab=tab;window.scrollTo(0,0);render()}
+function adminLayout(){
+ const A=t=>state.adminTab===t?'active':'';
+ let main='';
+ if(state.adminTab==='dashboard')main=admDashboard();
+ else if(state.adminTab==='bookings')main=admBookings();
+ else if(state.adminTab==='calendar')main=admCalendar();
+ else if(state.adminTab==='prices')main=admPrices();
+ else if(state.adminTab==='channels')main=admChannels();
+ else if(state.adminTab==='reports')main=admReports();
+ else if(state.adminTab==='settings')main=admSettings();
+ else if(state.adminTab==='apartments')main=admApartments();
+ else if(state.adminTab==='guests')main=admGuests();
+ else if(state.adminTab==='tasks')main=admTasks();
+ else if(state.adminTab==='invoices')main=admInvoices();
+ else if(state.adminTab==='assistant')main=admFaqs();
+ else if(state.adminTab==='extras')main=admExtras();
+ else if(state.adminTab==='emails')main=admEmails();
+ return `<div class="admin-top"><div class="brand">☁ my Vienna Stay · Cockpit</div><div><a onclick="go('home')">↗ View booking site</a><a onclick="adminLogout()">Log out</a></div></div>
+ <div class="admin-layout">
+  <nav class="admin-side">
+   <div class="grp">Cockpit</div>
+   <a class="${A('dashboard')}" onclick="adminGo('dashboard')">▤ Dashboard</a>
+   <a class="${A('bookings')}" onclick="adminGo('bookings')">≣ Bookings</a>
+   <a class="${A('calendar')}" onclick="adminGo('calendar')">▦ Planning calendar</a>
+   <div class="grp">Manage</div>
+   <a class="${A('apartments')}" onclick="adminGo('apartments')">⌂ Apartments</a>
+   <a class="${A('prices')}" onclick="adminGo('prices')">€ Prices & discounts</a>
+   <a class="${A('extras')}" onclick="adminGo('extras')">➕ Extras</a>
+   <a class="${A('emails')}" onclick="adminGo('emails')">📧 Emails</a>
+   <a class="${A('guests')}" onclick="adminGo('guests')">👤 Guests</a>
+   <a class="${A('tasks')}" onclick="adminGo('tasks')">✓ Tasks</a>
+   <a class="${A('invoices')}" onclick="adminGo('invoices')">▧ Invoices</a>
+   <a class="${A('assistant')}" onclick="adminGo('assistant')">💬 Assistant</a>
+   <div class="grp">More</div>
+   <a class="${A('channels')}" onclick="adminGo('channels')">↔ Channel manager</a>
+   <a class="${A('reports')}" onclick="adminGo('reports')">▤ Reports</a>
+   <a class="${A('settings')}" onclick="adminGo('settings')">⚙ Settings</a>
+  </nav>
+  <div class="admin-main">${main}</div>
+ </div>`
+}
+function admDashboard(){
+ const conf=bookings.filter(b=>b.status==='confirmed');
+ const revenue=conf.reduce((s,b)=>s+b.total,0);
+ const persons=conf.reduce((s,b)=>s+(b.guests||0),0);
+ const arrivalsToday=conf.filter(b=>b.checkIn===TODAY);
+ const departuresToday=conf.filter(b=>b.checkOut===TODAY);
+ const monthPrefix=TODAY.slice(0,7);
+ const revMonth=conf.filter(b=>(b.paidAt||'').slice(0,7)===monthPrefix||b.checkIn.slice(0,7)===monthPrefix).reduce((s,b)=>s+b.total,0);
+ const upcoming=conf.filter(b=>D(b.checkIn)>=new Date()).length;
+ // bookings per next 14 days (by check-in)
+ const bars=[];for(let i=0;i<14;i++){const d=iso(i);const c=conf.filter(b=>b.checkIn===d).length;bars.push({d,c})}
+ const maxc=Math.max(1,...bars.map(b=>b.c));
+ const directCount=conf.length; // all direct in our system
+ return `<h1>Dashboard</h1><div class="muted">Live view — synced with the booking site in real time.</div>
+ <div class="kpi-grid">
+  <div class="kpi"><div class="label">Bookings / Revenue <span class="tag">All</span></div><div class="big">${conf.length}</div><div class="sub">${persons} guests · ${CUR}${revenue.toLocaleString()} total</div></div>
+  <div class="kpi"><div class="label">Arrivals <span class="tag">Today</span></div><div class="big">${arrivalsToday.length}</div><div class="sub">${arrivalsToday.reduce((s,b)=>s+b.guests,0)} guests checking in</div></div>
+  <div class="kpi"><div class="label">Departures <span class="tag">Today</span></div><div class="big">${departuresToday.length}</div><div class="sub">${departuresToday.reduce((s,b)=>s+b.guests,0)} guests checking out</div></div>
+  <div class="kpi"><div class="label">Revenue <span class="tag">This month</span></div><div class="big">${CUR}${revMonth.toLocaleString()}</div><div class="sub">${upcoming} upcoming bookings</div></div>
+ </div>
+ <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+  <div class="panel"><strong>Arrivals — next 14 days</strong>
+   <div class="bars">${bars.map(b=>`<div class="bar" style="height:${Math.round(b.c/maxc*100)}%" title="${b.c} on ${b.d}"><span>${fmtShort(b.d).slice(0,2)}</span></div>`).join('')}</div>
+   <div style="height:22px"></div>
+  </div>
+  <div class="panel"><strong>Where booked?</strong>
+   <div style="display:flex;align-items:center;gap:16px;margin-top:14px">
+    <div class="donut"><div class="hole">Direct<br>100%</div></div>
+    <div style="font-size:13px"><div>▉ Vienna Stay (direct) — ${directCount}</div><div class="muted" style="margin-top:6px">▉ Booking.com — 0<br>▉ Airbnb — 0</div><div class="muted" style="margin-top:6px;font-size:12px">Channel sync (c/d/e) not connected yet.</div></div>
+   </div>
+  </div>
+ </div>
+ <div class="panel"><strong>Today's arrivals</strong>${arrivalsToday.length===0?`<p class="muted" style="margin:8px 0 0">No arrivals today.</p>`:`<table class="tbl" style="margin-top:8px"><thead><tr><th>Ref</th><th>Guest</th><th>Apartment(s)</th><th>Guests</th><th>Nights</th></tr></thead><tbody>${arrivalsToday.map(b=>`<tr><td>${b.ref}</td><td>${esc(b.guestName)}</td><td>${esc(unitsLabel(b))}</td><td>${b.guests}</td><td>${b.nights}</td></tr>`).join('')}</tbody></table>`}</div>`
+}
+function admBookings(){
+ let list=[...bookings].sort((a,b)=>D(a.checkIn)-D(b.checkIn));
+ const f=state.adminFilter;
+ if(f==='confirmed')list=list.filter(b=>b.status==='confirmed');
+ else if(f==='cancelled')list=list.filter(b=>b.status==='cancelled');
+ else if(f==='upcoming')list=list.filter(b=>b.status==='confirmed'&&D(b.checkIn)>=new Date());
+ const q=state.adminSearch.trim().toLowerCase();
+ if(q)list=list.filter(b=>(b.guestName||'').toLowerCase().includes(q)||b.ref.toLowerCase().includes(q)||unitsLabel(b).toLowerCase().includes(q));
+ const F=t=>state.adminFilter===t?'active':'';
+ const rows=list.map(b=>{const upcoming=D(b.checkIn)>new Date(),canCancel=b.status==='confirmed'&&upcoming;
+  return `<tr><td>${b.ref}</td><td>${esc(b.guestName||'—')}</td><td>${esc(unitsLabel(b))}${b.unitIds.length>1?' <span class="combo-badge">combo</span>':''}</td><td>${fmt(b.checkIn)}</td><td>${fmt(b.checkOut)}</td><td>${b.nights}</td><td>${b.guests}</td><td><span class="badge ${b.status}">${b.status==='confirmed'?'Confirmed':b.status==='cancelled'?'Cancelled':b.status}</span></td><td>${CUR}${b.total}</td><td>${canCancel?`<button class="btn btn-ghost btn-sm" onclick="admCancel('${b.id}')">Cancel</button>`:'—'}</td></tr>`}).join('');
+ return `<h1>Bookings</h1><div class="muted">All reservations from the booking site.</div>
+ <div class="panel">
+  <div class="filters"><span class="f ${F('all')}" onclick="state.adminFilter='all';render()">All (${bookings.length})</span><span class="f ${F('confirmed')}" onclick="state.adminFilter='confirmed';render()">Confirmed</span><span class="f ${F('upcoming')}" onclick="state.adminFilter='upcoming';render()">Upcoming</span><span class="f ${F('cancelled')}" onclick="state.adminFilter='cancelled';render()">Cancelled</span>
+   <input class="ctrl" style="max-width:220px;margin-left:auto" placeholder="Search name / ref / apartment" value="${esc(state.adminSearch)}" oninput="state.adminSearch=this.value;render()"></div>
+  <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Ref</th><th>Guest</th><th>Apartment(s)</th><th>Check-in</th><th>Check-out</th><th>Nights</th><th>Guests</th><th>Status</th><th>Total</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="10" class="muted" style="padding:20px;text-align:center">No bookings match.</td></tr>`}</tbody></table></div>
+ </div>`
+}
+function admCancel(id){if(!confirm('Cancel this booking for the guest? No refund will be issued.'))return;const b=bookings.find(x=>x.id===id);b.status='cancelled';b.cancelledAt=new Date().toISOString();sbPatch('bookings','id',id,{status:'cancelled',cancelled_at:b.cancelledAt});render()}
+function admCalendar(){
+ const days=[];for(let i=-1;i<20;i++)days.push(iso(i));
+ const wd=d=>D(d).toLocaleDateString('en-GB',{weekday:'short'});
+ const mo=d=>D(d).toLocaleDateString('en-GB',{month:'short'});
+ const head=days.map(d=>`<th class="plday ${d===TODAY?'pl-today':''}"><div class="w">${wd(d)}</div><div class="n">${D(d).getDate()}</div><div class="m">${mo(d)}</div></th>`).join('');
+ const rows=UNITS.map(u=>{
+  let cells='',i=0;
+  while(i<days.length){
+   const day=days[i];
+   const b=bookings.find(bk=>blocks(bk)&&bk.unitIds.includes(u.id)&&D(day)>=D(bk.checkIn)&&D(day)<D(bk.checkOut));
+   if(b){let j=i;while(j<days.length&&D(days[j])>=D(b.checkIn)&&D(days[j])<D(b.checkOut))j++;const span=j-i;cells+=`<td colspan="${span}" class="pl-book pl-${b.status}"><div class="pl-inner" title="${esc(b.guestName||'')} · ${fmt(b.checkIn)}→${fmt(b.checkOut)}">${esc(b.guestName||'—')} · ${b.guests}p · ${CUR}${b.total} · ${esc(b.source||'DIRECT')}</div></td>`;i=j;}
+   else{cells+=`<td class="${day===TODAY?'pl-today':''}"></td>`;i++;}
+  }
+  return `<tr><td class="pl-unit">${esc(u.name)} <span class="muted">(${u.maxGuests})</span></td>${cells}</tr>`;
+ }).join('');
+ return `<h1>Planning calendar</h1><div class="muted">Every apartment × every day. Each bar is a booking, stretched from check-in to check-out — synced live with the site. Today is highlighted.</div>
+ <div class="panel cal"><table class="pl"><thead><tr><th class="pl-unit">Apartment</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+ <div style="margin-top:10px;font-size:13px" class="muted"><span style="display:inline-block;width:12px;height:12px;background:#35568a;border-radius:3px;vertical-align:middle"></span> Confirmed &nbsp; <span style="display:inline-block;width:12px;height:12px;background:#c99a3a;border-radius:3px;vertical-align:middle"></span> On hold</div>`
+}
+
+/* ADMIN: MANAGE SECTIONS */
+let CHANNELS=[{n:'Booking.com',on:false},{n:'Airbnb',on:false},{n:'Expedia',on:false},{n:'Vrbo',on:false}];
+let TASKS=(function(){try{return JSON.parse(localStorage.getItem('vs-tasks'))||null}catch(e){return null}})()||[{id:1,text:'Prepare Ringstrasse Studio for arrival',done:false},{id:2,text:'Send check-in details to Anna Weber',done:false},{id:3,text:'Restock towels — Naschmarkt Loft',done:true}];
+const saveTasks=()=>localStorage.setItem('vs-tasks',JSON.stringify(TASKS));
+
+function admApartments(){
+ const rows=UNITS.map(u=>`<tr><td><input class="ctrl" style="min-width:150px" value="${esc(u.name)}" onchange="setUnitField('${u.id}','name',this.value)"></td><td><input class="ctrl" type="number" style="width:74px" value="${u.maxGuests}" onchange="setUnitField('${u.id}','maxGuests',this.value)"></td><td><input class="ctrl" type="number" style="width:92px" value="${u.basePricePerNight}" onchange="setUnitField('${u.id}','basePricePerNight',this.value)"> ${CUR}</td><td>${esc(u.address)}</td></tr>`).join('');
+ return `<h1>Apartments</h1><div class="muted">Your rental units. Edits apply to the booking site immediately.</div>
+  <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${UNITS.length} apartments</strong><button class="btn btn-sm" onclick="addUnit()">+ Add apartment</button></div>
+  <div style="overflow-x:auto"><table class="tbl" style="margin-top:8px"><thead><tr><th>Name</th><th>Sleeps</th><th>Base price / night</th><th>Address</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+function setUnitField(id,f,v){const u=getUnit(id);const col={name:'name',address:'address',maxGuests:'max_guests',basePricePerNight:'base_price_per_night'}[f];if(f==='name'||f==='address')u[f]=v;else u[f]=Math.max(0,parseInt(v)||0);sbPatch('units','id',id,{[col]:u[f]})}
+async function addUnit(){const name=prompt('Apartment name:','New Apartment');if(!name)return;const price=parseInt(prompt('Base price per night:','120'))||120;const guests=parseInt(prompt('Max guests:','2'))||2;const id='u'+Date.now();await sbInsert('units',{id,name,description:'A comfortable Vienna apartment.',max_guests:guests,base_price_per_night:price,address:'Vienna, Austria',photo:'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=900&q=70',active:true});await reloadUnits();render()}
+
+function admPrices(){
+ const unitRows=UNITS.map(u=>`<tr><td>${esc(u.name)}</td><td><input class="ctrl" type="number" style="width:92px" value="${u.basePricePerNight}" onchange="setUnitField('${u.id}','basePricePerNight',this.value)"> ${CUR}</td></tr>`).join('');
+ const seasonRows=SEASONAL.map((r,i)=>`<tr><td>${esc(getUnit(r.unitId)?getUnit(r.unitId).name:r.unitId)}</td><td>${fmt(r.from)} → ${fmt(r.to)}</td><td>${CUR}${r.price}/night</td><td><button class="btn btn-ghost btn-sm" onclick="delSeason(${r.id})">Remove</button></td></tr>`).join('');
+ const codeRows=CODES.map((c,i)=>`<tr><td><strong>${c.code}</strong></td><td>${c.type==='percent'?c.value+'%':CUR+c.value}</td><td>min ${c.minNights} nights</td><td><span class="badge ${c.active===false?'cancelled':'confirmed'}">${c.active===false?'Off':'Active'}</span></td><td><button class="btn btn-ghost btn-sm" onclick="toggleCode(${i})">${c.active===false?'Enable':'Disable'}</button></td></tr>`).join('');
+ return `<h1>Prices & discounts</h1><div class="muted">Base rates, seasonal pricing and discount codes — live on the booking site.</div>
+  <div class="panel"><strong>Base price per night</strong><table class="tbl" style="margin-top:8px"><thead><tr><th>Apartment</th><th>Price</th></tr></thead><tbody>${unitRows}</tbody></table></div>
+  <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><strong>Seasonal rates</strong><button class="btn btn-sm" onclick="addSeason()">+ Add seasonal rate</button></div><table class="tbl" style="margin-top:8px"><thead><tr><th>Apartment</th><th>Period</th><th>Price / night</th><th></th></tr></thead><tbody>${seasonRows||'<tr><td colspan=4 class="muted">No seasonal rates yet.</td></tr>'}</tbody></table></div>
+  <div class="panel"><strong>Discount codes</strong><table class="tbl" style="margin-top:8px"><thead><tr><th>Code</th><th>Discount</th><th>Rule</th><th>Status</th><th></th></tr></thead><tbody>${codeRows}</tbody></table></div>`;
+}
+async function delSeason(id){await sbDelete('seasonal_rates','id',id);await reloadSeasons();render()}
+async function toggleCode(i){const c=CODES[i];const na=c.active===false?true:false;c.active=na;await sbPatch('discount_codes','code',c.code,{active:na});render()}
+async function addSeason(){const uid=prompt('Apartment id (u1, u2, u3, u4):','u1');if(!uid||!getUnit(uid)){if(uid)alert('Unknown apartment id.');return}const from=prompt('From date (YYYY-MM-DD):','2026-12-20');const to=prompt('To date (YYYY-MM-DD):','2026-12-31');const price=parseInt(prompt('Price per night:','200'));if(from&&to&&price){await sbInsert('seasonal_rates',{unit_id:uid,from_date:from,to_date:to,price});await reloadSeasons();render()}}
+
+function admGuests(){
+ const map={};bookings.forEach(b=>{if(!b.guestEmail)return;const k=b.guestEmail.toLowerCase();if(!map[k])map[k]={name:b.guestName,email:b.guestEmail,phone:b.guestPhone,count:0,spent:0};map[k].count++;if(b.status==='confirmed')map[k].spent+=b.total});
+ const list=Object.values(map);
+ const rows=list.map(g=>`<tr><td>${esc(g.name||'—')}</td><td>${esc(g.email)}</td><td>${esc(g.phone||'—')}</td><td>${g.count}</td><td>${CUR}${g.spent.toLocaleString()}</td></tr>`).join('');
+ return `<h1>Guests</h1><div class="muted">Everyone who has booked — built automatically from reservations.</div>
+  <div class="panel"><strong>${list.length} guests</strong><div style="overflow-x:auto"><table class="tbl" style="margin-top:8px"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Bookings</th><th>Spent</th></tr></thead><tbody>${rows||'<tr><td colspan=5 class="muted">No guests yet.</td></tr>'}</tbody></table></div></div>`;
+}
+
+function admTasks(){
+ const rows=TASKS.map(t=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--beige-line)"><input type="checkbox" ${t.done?'checked':''} onclick="toggleTask(${t.id})"><span style="${t.done?'text-decoration:line-through;color:var(--muted)':''}">${esc(t.text)}</span><button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="delTask(${t.id})">✕</button></div>`).join('');
+ return `<h1>Tasks</h1><div class="muted">Your operational to-do list — cleaning, check-ins, guest messages.</div>
+  <div class="panel"><div class="promo-row" style="margin-bottom:10px"><input id="newtask" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()"><button class="btn" onclick="addTask()">Add</button></div>${rows||'<p class="muted">No tasks.</p>'}</div>`;
+}
+function addTask(){const el=document.getElementById('newtask');const v=el.value.trim();if(!v)return;TASKS.push({id:Date.now(),text:v,done:false});saveTasks();render()}
+function toggleTask(id){const t=TASKS.find(x=>x.id===id);t.done=!t.done;saveTasks();render()}
+function delTask(id){TASKS=TASKS.filter(x=>x.id!==id);saveTasks();render()}
+
+function admInvoices(){
+ const conf=bookings.filter(b=>b.status==='confirmed').sort((a,b)=>D(b.checkIn)-D(a.checkIn));
+ const rows=conf.map(b=>`<tr><td>INV-${b.ref.replace('VS-','')}</td><td>${esc(b.guestName||'—')}</td><td>${fmt(b.paidAt?b.paidAt.slice(0,10):b.checkIn)}</td><td>${CUR}${b.total}</td><td><span class="badge confirmed">Paid</span></td><td><button class="btn btn-ghost btn-sm" onclick="alert('Invoice ${b.ref} — PDF download (demo).')">Download</button></td></tr>`).join('');
+ const total=conf.reduce((s,b)=>s+b.total,0);
+ return `<h1>Invoices</h1><div class="muted">One invoice per paid booking. Total collected: <strong>${CUR}${total.toLocaleString()}</strong>.</div>
+  <div class="panel"><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Invoice</th><th>Guest</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan=6 class="muted">No invoices yet.</td></tr>'}</tbody></table></div></div>`;
+}
+
+function admChannels(){
+ const rows=CHANNELS.map((c,i)=>`<tr><td><strong>${c.n}</strong></td><td>${c.on?'<span class="badge confirmed">Connected</span>':'<span class="muted">Not connected</span>'}</td><td><button class="btn btn-ghost btn-sm" onclick="toggleChannel(${i})">${c.on?'Disconnect':'Connect'}</button></td></tr>`).join('');
+ return `<h1>Channel manager</h1><div class="muted">Sync availability & prices with travel sites. When connected, a booking on any channel blocks those dates everywhere — no double bookings.</div>
+  <div class="notice" style="background:#eef3ec;border-color:#cfe0cd;color:#3f5f45;margin-top:14px">This is the (e) feature from your plan. In the live system it connects through the real Booking.com / Airbnb APIs. Here you can see and try how it will work.</div>
+  <div class="panel"><table class="tbl"><thead><tr><th>Channel</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function toggleChannel(i){CHANNELS[i].on=!CHANNELS[i].on;render()}
+
+function admReports(){
+ const conf=bookings.filter(b=>b.status==='confirmed');
+ const revenue=conf.reduce((s,b)=>s+b.total,0);
+ const persons=conf.reduce((s,b)=>s+b.guests,0);
+ const avg=conf.length?Math.round(revenue/conf.length):0;
+ let occDays=0;const totalDays=UNITS.length*30;
+ for(const u of UNITS){for(let i=0;i<30;i++){const d=iso(i);if(conf.some(b=>b.unitIds.includes(u.id)&&D(d)>=D(b.checkIn)&&D(d)<D(b.checkOut)))occDays++}}
+ const occ=Math.round(occDays/totalDays*100);
+ const byUnit=UNITS.map(u=>{const bs=conf.filter(b=>b.unitIds.includes(u.id));const rev=bs.reduce((s,b)=>s+Math.round(b.total/b.unitIds.length),0);return{u,count:bs.length,rev}}).sort((a,b)=>b.rev-a.rev);
+ return `<h1>Reports</h1><div class="muted">Performance at a glance — from live booking data.</div>
+  <div class="kpi-grid"><div class="kpi"><div class="label">Total revenue</div><div class="big">${CUR}${revenue.toLocaleString()}</div></div><div class="kpi"><div class="label">Confirmed bookings</div><div class="big">${conf.length}</div><div class="sub">${persons} guests</div></div><div class="kpi"><div class="label">Avg booking value</div><div class="big">${CUR}${avg}</div></div><div class="kpi"><div class="label">Occupancy (30d)</div><div class="big">${occ}%</div></div></div>
+  <div class="panel"><strong>Revenue by apartment</strong><table class="tbl" style="margin-top:8px"><thead><tr><th>Apartment</th><th>Bookings</th><th>Revenue</th></tr></thead><tbody>${byUnit.map(x=>`<tr><td>${esc(x.u.name)}</td><td>${x.count}</td><td>${CUR}${x.rev.toLocaleString()}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function admSettings(){
+ return `<h1>Settings</h1><div class="muted">Property details and booking rules.</div>
+  <div class="panel"><strong>Property</strong><div class="form-grid" style="margin-top:10px"><div><label class="lbl">Name</label><input class="ctrl" value="Vienna Stay Apartments"></div><div><label class="lbl">Currency</label><input class="ctrl" value="EUR (€)"></div><div class="full"><label class="lbl">Address</label><input class="ctrl" value="Vienna, Austria"></div></div></div>
+  <div class="panel"><strong>Booking rules</strong><div class="form-grid" style="margin-top:10px"><div><label class="lbl">Minimum nights</label><input class="ctrl" value="2"></div><div><label class="lbl">Hold time (minutes)</label><input class="ctrl" value="10"></div><div><label class="lbl">Payment</label><input class="ctrl" value="Full prepayment"></div><div><label class="lbl">Cancellation</label><input class="ctrl" value="No refund"></div></div></div>
+  <div class="panel"><strong>Manager login</strong><p class="muted" style="font-size:13px;margin:8px 0 0">Sign-in uses real accounts. Passwords are never stored in this page — they live in the authentication service, hashed. To add another manager or change a password, use the Supabase dashboard (Authentication &rarr; Users).</p></div>
+  <div style="margin-top:12px"><button class="btn" onclick="alert('Settings saved (demo).')">Save changes</button></div>`;
+}
+
+function admFaqs(){
+ const rows=FAQS.map(f=>`<tr><td>${esc(f.keywords||'')}</td><td>${esc(f.answer_en||'')}</td><td>${esc(f.answer_de||'')}</td><td><button class="btn btn-ghost btn-sm" onclick="delFaq(${f.id})">Remove</button></td></tr>`).join('');
+ return `<h1>Assistant knowledge</h1><div class="muted">The website chat assistant answers ONLY from your live apartment data plus the custom answers below. Anything it cannot answer is sent to your WhatsApp (${WA_SHOW}).</div>
+  <div class="panel"><strong>Answered automatically from live data:</strong><div class="muted" style="margin-top:6px;font-size:13px">Prices · Availability · Guest capacity &amp; group combinations · Locations · Minimum nights · Cancellation policy · How to book</div></div>
+  <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><strong>Your custom answers (${FAQS.length})</strong><button class="btn btn-sm" onclick="addFaq()">+ Add answer</button></div>
+  <div style="overflow-x:auto"><table class="tbl" style="margin-top:8px"><thead><tr><th>Keywords (triggers)</th><th>Answer (English)</th><th>Answer (German)</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan=4 class="muted">No custom answers yet. Built-in answers already cover check-in, Wi-Fi, parking, pets, smoking, kitchen and luggage.</td></tr>'}</tbody></table></div></div>`;
+}
+async function addFaq(){const kw=prompt('Keywords that trigger this answer (space-separated, e.g. "breakfast morning food"):');if(!kw)return;const en=prompt('Answer in English:');if(!en)return;const de=prompt('Answer in German (leave blank to reuse the English text):')||en;await sbInsert('faqs',{keywords:kw,answer_en:en,answer_de:de});await reloadFaqs();render()}
+async function delFaq(id){await sbDelete('faqs','id',id);await reloadFaqs();render()}
+
+function admExtras(){
+ const rows=EXTRAS.map(e=>`<tr><td>${esc(e.name_en||'')}</td><td>${esc(e.name_de||'')}</td><td>${CUR}${e.price}</td><td>${e.per==='night'?L('per night','pro Nacht'):L('per stay','pro Aufenthalt')}</td><td><span class="badge ${e.active===false?'cancelled':'confirmed'}">${e.active===false?'Off':'Active'}</span></td><td><button class="btn btn-ghost btn-sm" onclick="toggleExtra(${e.id})">${e.active===false?'Enable':'Disable'}</button> <button class="btn btn-ghost btn-sm" onclick="delExtra(${e.id})">Remove</button></td></tr>`).join('');
+ return `<h1>Extras</h1><div class="muted">Optional add-ons guests can choose during booking — parking, breakfast, baby cot, late check-out and more. Changes go live on the site immediately.</div>
+  <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${EXTRAS.length} extras</strong><button class="btn btn-sm" onclick="addExtra()">+ Add extra</button></div>
+  <div style="overflow-x:auto"><table class="tbl" style="margin-top:8px"><thead><tr><th>Name (EN)</th><th>Name (DE)</th><th>Price</th><th>Charged</th><th>Status</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan=6 class="muted">No extras yet — add one, e.g. parking or breakfast.</td></tr>'}</tbody></table></div></div>`;
+}
+async function addExtra(){const en=prompt('Extra name (English), e.g. "Airport transfer":');if(!en)return;const de=prompt('Extra name (German — leave blank to reuse English):')||en;const price=parseFloat(prompt('Price (number only):','10'))||0;const per=(prompt('Charge per "night" or per "stay"?','night')||'night').toLowerCase().indexOf('stay')>=0?'stay':'night';await sbInsert('extras',{name_en:en,name_de:de,price:price,per:per,active:true,sort:EXTRAS.length+1});await reloadExtras();render()}
+async function toggleExtra(id){const e=EXTRAS.find(x=>x.id===id);const na=e.active===false?true:false;await sbPatch('extras','id',id,{active:na});await reloadExtras();render()}
+async function delExtra(id){await sbDelete('extras','id',id);await reloadExtras();render()}
+
+function emailTitle(k){return ({confirmation:L('Booking confirmation','Buchungsbestätigung'),prearrival:L('Before arrival (check-in info)','Vor Anreise (Check-in-Infos)'),poststay:L('After the stay (thank you)','Nach dem Aufenthalt (Danke)')})[k]||k}
+function emailTiming(t){if(t.key==='confirmation')return L('Sent immediately when a booking is paid','Sofort bei bezahlter Buchung');if(t.key==='prearrival')return (Math.abs(t.offset_days||2))+' '+L('day(s) before check-in','Tag(e) vor Anreise');return (t.offset_days||1)+' '+L('day(s) after check-out','Tag(e) nach Abreise')}
+function sampleBooking(){const conf=bookings.filter(b=>b.status==='confirmed');return conf[0]||{guestName:'Anna Weber',ref:'VS-DEMO1',checkIn:iso(14),checkOut:iso(17),nights:3,guests:2,total:390,unitIds:UNITS.length?[UNITS[0].id]:[]}}
+function admEmails(){
+ if(state.emailEdit){const t=state.emailDraft,sb=sampleBooking();
+  return `<h1>${emailTitle(t.key)}</h1><a class="muted" style="cursor:pointer" onclick="cancelEmail()">← ${L('Back to emails','Zurück')}</a>
+   <div class="email-edit">
+    <div class="panel"><label class="lbl">${L('Subject (English)','Betreff (Englisch)')}</label><input class="ctrl" value="${esc(t.subject_en||'')}" onchange="state.emailDraft.subject_en=this.value">
+     <label class="lbl" style="margin-top:12px">${L('Body (English)','Text (Englisch)')}</label><textarea class="ctrl" rows="7" onchange="state.emailDraft.body_en=this.value">${esc(t.body_en||'')}</textarea>
+     <div class="divider"></div>
+     <label class="lbl">${L('Subject (German)','Betreff (Deutsch)')}</label><input class="ctrl" value="${esc(t.subject_de||'')}" onchange="state.emailDraft.subject_de=this.value">
+     <label class="lbl" style="margin-top:12px">${L('Body (German)','Text (Deutsch)')}</label><textarea class="ctrl" rows="7" onchange="state.emailDraft.body_de=this.value">${esc(t.body_de||'')}</textarea>
+     <div class="muted" style="font-size:12px;margin-top:10px">${L('Placeholders you can use','Platzhalter')}: {guest} {apartment} {checkin} {checkout} {nights} {guests} {reference} {total}</div>
+     <div style="margin-top:14px;display:flex;gap:10px"><button class="btn" onclick="saveEmail()">${L('Save','Speichern')}</button><button class="btn btn-ghost" onclick="cancelEmail()">${L('Cancel','Abbrechen')}</button></div>
+    </div>
+    <div class="panel"><strong>${L('Live preview','Live-Vorschau')} (EN)</strong><div class="email-prev"><div class="email-subj">${esc(fillTemplate(t.subject_en,sb))}</div><div class="email-body">${esc(fillTemplate(t.body_en,sb))}</div></div><div class="muted" style="font-size:12px;margin-top:8px">${L('Using a sample booking to show how it looks.','Beispielbuchung zur Veranschaulichung.')}</div></div>
+   </div>`;
+ }
+ const rows=EMAILS.map(t=>`<div class="card pad" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><div><strong>${emailTitle(t.key)}</strong><div class="muted" style="font-size:13px">${esc(t.subject_en||'')}</div><div class="muted" style="font-size:12px">⏱ ${emailTiming(t)}</div></div><div style="display:flex;gap:8px;align-items:center"><span class="badge ${t.enabled===false?'cancelled':'confirmed'}">${t.enabled===false?L('Off','Aus'):L('On','An')}</span><button class="btn btn-ghost btn-sm" onclick="toggleEmail('${t.key}')">${t.enabled===false?L('Enable','An'):L('Disable','Aus')}</button><button class="btn btn-sm" onclick="editEmail('${t.key}')">${L('Edit','Bearbeiten')}</button></div></div></div>`).join('');
+ return `<h1>Emails</h1><div class="muted">Automatic emails to your guests. Edit the text in English &amp; German; sending is powered by Resend (setup below).</div>${EMAILS.length?rows:'<div class="panel muted" style="margin-top:12px">No templates yet — run the setup SQL to add the three emails.</div>'}`;
+}
+function editEmail(k){state.emailEdit=k;state.emailDraft=Object.assign({},EMAILS.find(t=>t.key===k));window.scrollTo(0,0);render()}
+function cancelEmail(){state.emailEdit=null;state.emailDraft=null;render()}
+async function saveEmail(){const d=state.emailDraft;await sbPatch('email_templates','key',d.key,{subject_en:d.subject_en,subject_de:d.subject_de,body_en:d.body_en,body_de:d.body_de});await reloadEmails();state.emailEdit=null;state.emailDraft=null;render()}
+async function toggleEmail(k){const t=EMAILS.find(x=>x.key===k);const na=t.enabled===false?true:false;await sbPatch('email_templates','key',k,{enabled:na});await reloadEmails();render()}
+
+/* ===== SITE ASSISTANT (answers only from your data + FAQs) ===== */
+const WA_PHONE='436643912693';
+const WA_LINK='https://wa.me/'+WA_PHONE;
+const WA_SHOW='+43 664 3912693';
+let FAQS=[];
+const DEFAULT_FAQS=[
+ {q:'check in checkin check-out checkout time hour anreise abreise einchecken uhrzeit צ׳ק אין כניסה יציאה שעה',a_en:'Check-in is from 3:00 PM, check-out by 11:00 AM. Early check-in or late check-out may be possible on request.',a_de:'Check-in ab 15:00 Uhr, Check-out bis 11:00 Uhr. Früher Check-in oder später Check-out auf Anfrage möglich.'},
+ {q:'wifi wi-fi internet wlan אינטרנט וויפי',a_en:'Yes — every apartment has fast, free Wi-Fi.',a_de:'Ja — jedes Apartment hat schnelles, kostenloses WLAN.'},
+ {q:'parking car park auto parken garage חניה רכב',a_en:'Public paid parking is available nearby; there is no private parking at the apartments.',a_de:'In der Nähe gibt es öffentliche, kostenpflichtige Parkplätze; eigene Parkplätze gibt es nicht.'},
+ {q:'pet pets dog cat animal haustier hund katze חיה כלב חתול',a_en:'Sorry, pets are not allowed in the apartments.',a_de:'Haustiere sind in den Apartments leider nicht erlaubt.'},
+ {q:'smoke smoking rauchen zigarette עישון סיגריה',a_en:'All apartments are strictly non-smoking.',a_de:'Alle Apartments sind reine Nichtraucher-Apartments.'},
+ {q:'kitchen cook kitchenette küche kochen מטבח בישול',a_en:'Yes — each apartment has a fully equipped kitchenette.',a_de:'Ja — jedes Apartment hat eine voll ausgestattete Küchenzeile.'},
+ {q:'luggage bags store gepäck aufbewahren מזוודות אחסון',a_en:'We can usually store luggage before check-in or after check-out — just ask us.',a_de:'Gepäck kann meist vor dem Check-in oder nach dem Check-out aufbewahrt werden — fragen Sie uns einfach.'}
+];
+async function reloadFaqs(){const f=await sbGet('faqs?select=*&order=id');FAQS=f.map(x=>({q:((x.keywords||'')+' '+(x.answer_en||'')).toLowerCase(),a_en:x.answer_en,a_de:x.answer_de||x.answer_en,id:x.id,keywords:x.keywords,answer_en:x.answer_en,answer_de:x.answer_de}))}
+function matchFaq(t){const all=FAQS.concat(DEFAULT_FAQS);const words=t.split(/[^a-z0-9äöüßא-ת]+/i).filter(w=>w.length>2);let best=null,bs=0;for(const f of all){const kw=(f.q||'').toLowerCase();let s=0;for(const w of words){if(kw.indexOf(w)>=0)s++}if(s>bs){bs=s;best=f}}return bs>=1?best:null}
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function waLine(){return L(`just message us on WhatsApp and we'll get right back to you: <a href="${WA_LINK}" target="_blank">${WA_SHOW}</a> 🙂`,`schreiben Sie uns einfach auf WhatsApp, wir melden uns sofort: <a href="${WA_LINK}" target="_blank">${WA_SHOW}</a> 🙂`)}
+function fallbackAnswer(t){
+ let topic=L('that','das');
+ const cats=[
+  [/(breakfast|food|eat|restaurant|dinner|coffee|essen|frühstück|אוכל|מסעדה|ארוחה|קפה)/,L('food and places to eat nearby','Essen in der Nähe')],
+  [/(see|do|attraction|tour|visit|sightsee|museum|sehenswür|besichtig|לראות|אטרקצ|סיור|מוזיאון)/,L('things to see and do','Sehenswürdigkeiten')],
+  [/(baby|crib|cot|child|family|kinderbett|תינוק|לול|משפחה|ילד)/,L('family and kids','Familie & Kinder')],
+  [/(clean|cleaning|housekeep|reinig|putz|ניקיון)/,L('cleaning','Reinigung')],
+  [/(key|access|door|code|entry|schlüssel|zugang|מפתח|כניסה|קוד)/,L('keys and access','Schlüssel & Zugang')],
+  [/(noise|quiet|neighbou|lärm|ruhe|רעש|שקט|שכנים)/,L('the neighbourhood','die Nachbarschaft')],
+  [/(iron|dryer|washer|laundry|waschen|כביסה|מייבש)/,L('laundry','Wäsche')]
+ ];
+ for(var i=0;i<cats.length;i++){if(cats[i][0].test(t)){topic=cats[i][1];break}}
+ const en=[`Good question! I don't have the exact details on ${topic} right here — the quickest way is that you `,`Hmm, I'm honestly not sure about ${topic} — best is you `,`That's a little beyond what I can see about ${topic}. To be safe, `];
+ const de=[`Gute Frage! Zu ${topic} habe ich hier gerade keine genauen Infos — am schnellsten ist es, wenn Sie `,`Ehrlich gesagt bin ich mir bei ${topic} nicht sicher — am besten `,`Das geht etwas über das hinaus, was ich zu ${topic} sehe. Um sicherzugehen, `];
+ return L(rnd(en),rnd(de))+waLine();
+}
+function assistantAnswer(qraw){
+ const t=qraw.toLowerCase();
+ if(/(thank|thanks|thx|danke|תודה|תודה רבה)/.test(t))return rnd([L("You're very welcome! Anything else I can help with? 😊","Sehr gerne! Kann ich sonst noch etwas tun? 😊"),L("Anytime! 🙂 Just say the word.","Jederzeit! 🙂")]);
+ if(/^(bye|goodbye|see you|good night|tschüss|ciao|ביי|להתראות|לילה טוב)/.test(t))return L("Take care — we'd love to host you in Vienna! 👋","Machen Sie's gut — wir würden uns freuen, Sie in Wien begrüßen zu dürfen! 👋");
+ if(/^(hi|hey|hello|hallo|servus|good\s|guten|heya|yo|שלום|היי|הי|מה נשמע|אהלן)/.test(t))return rnd([L("Hey there! 👋 How can I help — prices, availability, a bigger group, or booking?","Hallo! 👋 Wie kann ich helfen — Preise, Verfügbarkeit, größere Gruppe oder Buchung?"),L("Hi! 😊 Happy to help — ask me anything about the apartments.","Hallo! 😊 Ich helfe gerne — fragen Sie mich alles zu den Apartments."),L("Hello! 👋 What can I tell you about our Vienna apartments?","Hallo! 👋 Was möchten Sie über unsere Wiener Apartments wissen?")]);
+ if(/(price|prices|cost|how much|rate|expensive|preis|kostet|teuer|מחיר|מחירים|כמה עולה|כמה זה)/.test(t)){const list=UNITS.map(u=>`• ${esc(u.name)}: ${CUR}${u.basePricePerNight} ${L('per night','pro Nacht')} (${L('up to','bis')} ${u.maxGuests} ${L('guests','Gäste')})`).join('<br>');return L('Here are our nightly prices:<br>'+list+'<br><br>Prices can vary by season — the exact total appears when you choose dates.','Unsere Preise pro Nacht:<br>'+list+'<br><br>Preise können saisonal variieren — der genaue Gesamtpreis erscheint bei der Datumsauswahl.')}
+ if(/(people|persons|guests|sleep|fit|group|families|kids|children|אנשים|קבוצה|כמה אנשים|ילדים|personen|gäste|gruppe|leute|kinder)/.test(t)){const mx=Math.max.apply(null,UNITS.map(u=>u.maxGuests));const tot=UNITS.reduce((s,u)=>s+u.maxGuests,0);return L(`A single apartment sleeps up to ${mx} guests. For larger groups we automatically combine apartments into one booking (together up to ${tot} guests) — just enter the number of guests when you search.`,`Ein Apartment beherbergt bis zu ${mx} Gäste. Für größere Gruppen kombinieren wir Apartments automatisch zu einer Buchung (zusammen bis zu ${tot} Gäste) — geben Sie einfach die Gästezahl bei der Suche ein.`)}
+ if(/(availa|free|vacan|open date|verfügbar|frei|belegt|פנוי|זמין|תאריכים|פנויים)/.test(t))return L("To check availability, enter your check-in / check-out dates and number of guests in the search box at the top and press Search — you'll see exactly what's free.","Für die Verfügbarkeit geben Sie oben Anreise/Abreise und Gästezahl ein und klicken auf Suchen — Sie sehen sofort, was frei ist.");
+ if(/(where|location|address|located|area|district|neighbou|wo |adresse|lage|bezirk|gegend|איפה|מיקום|כתובת|אזור)/.test(t)){const list=UNITS.map(u=>`• ${esc(u.name)}: ${esc(u.address)}`).join('<br>');return L('Our apartments are around central Vienna:<br>'+list,'Unsere Apartments liegen im Zentrum von Wien:<br>'+list)}
+ if(/(cancel|refund|storn|rückerstatt|geld zurück|ביטול|החזר|לבטל)/.test(t))return L('Bookings can be cancelled, but they are non-refundable — the amount paid is not returned, so please choose your dates carefully.','Buchungen können storniert werden, sind jedoch nicht erstattungsfähig — der gezahlte Betrag wird nicht zurückerstattet. Bitte wählen Sie Ihre Daten sorgfältig.');
+ if(/(minimum|min night|how many night|nights|mindest|nächte|übernacht|מינימום|לילות|כמה לילות)/.test(t))return L('The minimum stay is 2 nights.','Der Mindestaufenthalt beträgt 2 Nächte.');
+ if(/(pay|payment|deposit|card|credit|zahl|bezahl|kreditkarte|anzahlung|תשלום|לשלם|כרטיס|מקדמה)/.test(t))return L('Payment is made in full at booking, by card. Your booking is confirmed the moment payment succeeds.','Die Zahlung erfolgt vollständig bei der Buchung per Karte. Ihre Buchung wird bestätigt, sobald die Zahlung erfolgreich ist.');
+ if(/(book|booking|reserve|reservation|how do i|order|buchen|reservier|bestell|להזמין|איך מזמינים|הזמנה|לבצע)/.test(t))return L('Booking is easy: pick your dates and guests above, choose an apartment, and pay securely. You get an instant confirmation with a reference number.','Buchen ist einfach: oben Daten und Gäste wählen, Apartment auswählen und sicher bezahlen. Sie erhalten sofort eine Bestätigung mit Buchungsnummer.');
+ if(/(amenit|include|included|equipped|towel|linen|bed|bathroom|shower|hair.?dry|ausstattung|inklusive|handtuch|bad|dusche|מה יש|כלול|מגבות|מיטה|מקלחת)/.test(t))return L("Every apartment has fast Wi-Fi, a full kitchenette, fresh linens and towels, and a private bathroom — everything you need for a comfortable, self-guided stay. Was there something specific you wanted to check?","Jedes Apartment bietet schnelles WLAN, eine voll ausgestattete Küchenzeile, frische Bettwäsche und Handtücher sowie ein eigenes Bad — alles für einen komfortablen Aufenthalt. Wollten Sie etwas Bestimmtes wissen?");
+ if(/(airport|transfer|taxi|train|metro|u-.?bahn|tram|bus|get there|pick.?up|flughafen|bahnhof|נמל תעופה|שדה תעופה|רכבת|מונית|תחבורה|הסעה)/.test(t))return L(`Central Vienna is really well connected by U-Bahn, tram and bus, and the airport is roughly 20–30 minutes away. If you'd like a specific transfer or pickup arranged, ${waLine()}`,`Das Zentrum Wiens ist mit U-Bahn, Straßenbahn und Bus super erreichbar, und der Flughafen ist etwa 20–30 Minuten entfernt. Für einen konkreten Transfer oder eine Abholung ${waLine()}`);
+ if(/(discount|deal|offer|coupon|promo|special|long.?stay|weekly|monthly|rabatt|angebot|gutschein|langzeit|הנחה|קופון|מבצע|לחודש|לשבוע|מחיר מיוחד)/.test(t))return L(`We do run promo codes now and then — you can pop one in at checkout. For a longer stay or a special rate, ${waLine()}`,`Wir haben ab und zu Rabattcodes — den können Sie an der Kasse eingeben. Für längere Aufenthalte oder Sonderpreise ${waLine()}`);
+ const f=matchFaq(t);
+ if(f)return L(f.a_en,f.a_de);
+ return fallbackAnswer(t);
+}
+function chatWidget(){
+ if(!state.chatOpen)return `<div class="chat-fab" onclick="toggleChat()" title="${L('Chat with us','Chatten Sie mit uns')}">💬</div>`;
+ const msgs=state.chatMsgs.map(m=>`<div class="cmsg ${m.role}">${m.text==='__typing__'?'<span class="typing"><i></i><i></i><i></i></span>':(m.role==='user'?esc(m.text):m.text)}</div>`).join('');
+ const sugg=state.chatMsgs.length<=1?`<div class="chat-sugg">${[[L('Prices?','Preise?')],[L('Room for 8 people?','Platz für 8?')],[L('Where are you located?','Wo liegt ihr?')],[L('How do I book?','Wie buche ich?')]].map(s=>`<button onclick="chatAsk(this.textContent)">${s[0]}</button>`).join('')}</div>`:'';
+ return `<div class="chat-fab" onclick="toggleChat()">✕</div>
+ <div class="chat-panel">
+  <div class="chat-head"><span><strong>${L('Vienna Stay Assistant','Vienna Stay Assistent')}</strong><br><span style="font-size:11px;opacity:.85;font-family:-apple-system,sans-serif">${L('Usually replies instantly','Antwortet meist sofort')}</span></span><span onclick="toggleChat()" style="cursor:pointer;font-size:18px">✕</span></div>
+  <div class="chat-body" id="chatBody">${msgs}${sugg}</div>
+  <div class="chat-input"><input id="chatInp" placeholder="${L('Ask a question…','Frage stellen…')}" onkeydown="if(event.key==='Enter')sendChat()"><button onclick="sendChat()">➤</button></div>
+ </div>`;
+}
+function toggleChat(){state.chatOpen=!state.chatOpen;if(state.chatOpen&&state.chatMsgs.length===0)state.chatMsgs.push({role:'bot',text:L("Hi! 👋 I'm the Vienna Stay assistant. Ask me about prices, availability, group stays, booking, or anything about the apartments.","Hallo! 👋 Ich bin der Vienna-Stay-Assistent. Fragen Sie mich zu Preisen, Verfügbarkeit, Gruppen, Buchung oder den Apartments.")});render();scrollChat()}
+function pushBot(q){const ans=assistantAnswer(q);state.chatMsgs.push({role:'bot',text:'__typing__'});render();scrollChat();const delay=550+Math.min(1400,q.length*30)+Math.random()*400;setTimeout(function(){for(var i=state.chatMsgs.length-1;i>=0;i--){if(state.chatMsgs[i].text==='__typing__'){state.chatMsgs.splice(i,1);break}}state.chatMsgs.push({role:'bot',text:ans});render();scrollChat()},delay)}
+function chatAsk(q){state.chatMsgs.push({role:'user',text:q});render();scrollChat();pushBot(q)}
+function sendChat(){const el=document.getElementById('chatInp');const q=(el&&el.value||'').trim();if(!q)return;state.chatMsgs.push({role:'user',text:q});render();scrollChat();pushBot(q)}
+function scrollChat(){setTimeout(function(){const b=document.getElementById('chatBody');if(b)b.scrollTop=b.scrollHeight;const i=document.getElementById('chatInp');if(i)i.focus()},30)}
+function initMap(){try{
+ const el=document.getElementById('locmap');if(!el)return;
+ if(!window.L){el.innerHTML='<div class="muted" style="padding:20px">'+L('Map loading…','Karte lädt…')+'</div>';return}
+ if(el._init)return;el._init=true;
+ const M=window.L;
+ const COORDS={u1:[48.2140,16.3590],u2:[48.1910,16.3810],u3:[48.1985,16.3630],u4:[48.1850,16.3200]};
+ const pts=UNITS.map(function(u){var la=u.lat,ln=u.lng;if((!la||!ln)&&COORDS[u.id]){la=COORDS[u.id][0];ln=COORDS[u.id][1]}return{u:u,la:la,ln:ln}}).filter(function(p){return p.la&&p.ln});
+ const map=M.map('locmap',{scrollWheelZoom:false}).setView([48.2082,16.3738],12);
+ M.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+ const bounds=[];
+ pts.forEach(function(p){M.marker([p.la,p.ln]).addTo(map).bindPopup('<b>'+esc(p.u.name)+'</b><br>'+esc(p.u.address||''));bounds.push([p.la,p.ln])});
+ if(bounds.length){map.fitBounds(bounds,{padding:[40,40],maxZoom:14})}
+}catch(e){}}
+
+/* TIMER */
+function startTimer(){tick=setInterval(()=>{const s=remainSecs(),el=document.getElementById('tmr');if(s<=0){render();return}if(el){el.textContent='⏳ '+L('Held for','Reserviert für')+' '+mmss(s);el.className='timer'+(s<120?' warn':'')}},1000)}
+
+document.addEventListener('click',function(){if(state.pickerOpen){state.pickerOpen=null;render()}});
+state.screen='adminlogin';
+render();loadAll();
+</script>
+</body>
+</html>
