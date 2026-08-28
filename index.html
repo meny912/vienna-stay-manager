@@ -159,7 +159,26 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text
 .cal .today{outline:2px solid var(--teal);outline-offset:-2px}
 .cal table.pl{width:100%}
 .pl th,.pl td{border:1px solid var(--beige-line);height:40px;min-width:42px;text-align:center;padding:0}
-.pl th.pl-unit,.pl td.pl-unit{text-align:left;padding:6px 10px;min-width:180px;white-space:nowrap;font-weight:600;background:#fff;position:sticky;left:0;z-index:1}
+.pl th.pl-unit,.pl td.pl-unit{text-align:left;padding:6px 10px;min-width:190px;white-space:nowrap;font-weight:600;background:#fff;position:sticky;left:0;z-index:2;border-right:1px solid var(--beige-line)}
+.cal{overflow:auto;max-height:calc(100vh - 250px)}
+.pl thead th{position:sticky;top:0;z-index:3;background:#fff}
+.pl thead th.pl-unit{z-index:4}
+.pl td.free{cursor:pointer;background:#f2f8f2;border:1px solid #fff}
+.pl td.free:hover{background:#cfe8cf}
+.pl td.free.pl-today{background:#d8efd8}
+.pl-inner{cursor:pointer}
+.pl-inner:hover{filter:brightness(1.15)}
+.calbar{display:flex;align-items:center;gap:10px;margin:14px 0}
+.calbar select{padding:7px 10px;border:1px solid var(--beige-line);border-radius:8px;font-size:14px;background:#fff}
+.calbar button{padding:7px 13px;border:1px solid var(--beige-line);background:#fff;border-radius:8px;cursor:pointer;font-size:15px}
+.calbar button:hover{background:var(--cream)}
+.ovl{position:fixed;inset:0;background:rgba(40,35,30,.5);display:grid;place-items:center;z-index:50;padding:18px}
+.ovl-card{background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:22px}
+.ovl-card h3{margin:0 0 4px}
+.ovl-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.ovl-row .full{grid-column:1/-1}
+.ovl-act{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.ovl-err{background:#f7e3d6;border:1px solid #eac3ab;color:var(--danger-dark);border-radius:8px;padding:10px 12px;font-size:14px;margin-top:12px}
 .pl th.plday .n{font-weight:700;font-size:14px}.pl th.plday .m{font-size:10px;color:var(--muted)}.pl th.plday .w{font-size:10px;color:var(--muted)}
 .pl .pl-today{background:#e6f5e6}
 .pl td.pl-book{padding:0;text-align:left}
@@ -268,7 +287,7 @@ async function loadAll(){await Promise.all([reloadUnits(),reloadSeasons(),reload
 /* Discount codes and email templates are manager data - loaded only after sign-in. */
 async function loadManagerData(){await Promise.all([reloadBookings(),reloadCodes(),reloadEmails(),reloadFaqs()]);render()}
 
-const state={screen:'home',checkIn:iso(14),checkOut:iso(17),guests:2,selectedUnitIds:null,bookingId:null,guest:{name:'',email:'',phone:''},promo:'',discount:null,promoError:'',cancelId:null,mb:{email:'',ref:'',searched:false,results:[]},adminTab:'dashboard',adminFilter:'all',adminSearch:'',auser:'',apass:'',adminErr:'',pickerOpen:null,pickerMonth:null,chatOpen:false,chatMsgs:[],extras:{},emailEdit:null,emailDraft:null,lang:(function(){try{return localStorage.getItem('vs-lang')||'en'}catch(e){return 'en'}})()};
+const state={screen:'home',checkIn:iso(14),checkOut:iso(17),guests:2,selectedUnitIds:null,bookingId:null,guest:{name:'',email:'',phone:''},promo:'',discount:null,promoError:'',cancelId:null,mb:{email:'',ref:'',searched:false,results:[]},adminTab:'dashboard',adminFilter:'all',adminSearch:'',auser:'',apass:'',adminErr:'',pickerOpen:null,pickerMonth:null,chatOpen:false,chatMsgs:[],extras:{},emailEdit:null,emailDraft:null,calMonth:null,mgr:null,mgrBusy:false,mgrErr:'',lang:(function(){try{return localStorage.getItem('vs-lang')||'en'}catch(e){return 'en'}})()};
 let adminAuthed=false;
 const L=(en,de)=>state.lang==='de'?de:en;
 function setLang(l){state.lang=l;try{localStorage.setItem('vs-lang',l)}catch(e){}render()}
@@ -580,7 +599,7 @@ function adminLayout(){
    <a class="${A('settings')}" onclick="adminGo('settings')">⚙ Settings</a>
   </nav>
   <div class="admin-main">${main}</div>
- </div>`
+ </div>${mgrModal()}`
 }
 function admDashboard(){
  const conf=bookings.filter(b=>b.status==='confirmed');
@@ -635,24 +654,152 @@ function admBookings(){
  </div>`
 }
 function admCancel(id){if(!confirm('Cancel this booking for the guest? No refund will be issued.'))return;const b=bookings.find(x=>x.id===id);b.status='cancelled';b.cancelledAt=new Date().toISOString();sbPatch('bookings','id',id,{status:'cancelled',cancelled_at:b.cancelledAt});render()}
+function monthStart(){return state.calMonth||(TODAY.slice(0,8)+'01')}
+function monthDays(ms){
+ const d=D(ms),y=d.getFullYear(),m=d.getMonth(),out=[];
+ const last=new Date(y,m+1,0).getDate();
+ for(let k=1;k<=last;k++)out.push(new Date(y,m,k).toISOString().slice(0,10));
+ return out;
+}
+function calShift(n){
+ const d=D(monthStart());d.setMonth(d.getMonth()+n);
+ state.calMonth=d.toISOString().slice(0,8)+'01';render();
+}
+function calSet(v){state.calMonth=v;render()}
+function monthOptions(){
+ const cur=monthStart(),out=[];const start=new Date(D(TODAY).getFullYear()-1,0,1);
+ for(let k=0;k<48;k++){
+  const d=new Date(start.getFullYear(),start.getMonth()+k,1);
+  const v=d.toISOString().slice(0,8)+'01';
+  out.push(`<option value="${v}"${v===cur?' selected':''}>${d.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</option>`);
+ }
+ return out.join('');
+}
+/* A booking that occupies a night. Cancelled and expired ones free the room up. */
+function bookingOn(unitId,day){
+ return bookings.find(function(bk){
+  return blocks(bk)&&bk.unitIds.indexOf(unitId)>-1&&D(day)>=D(bk.checkIn)&&D(day)<D(bk.checkOut);
+ });
+}
 function admCalendar(){
- const days=[];for(let i=-1;i<20;i++)days.push(iso(i));
- const wd=d=>D(d).toLocaleDateString('en-GB',{weekday:'short'});
- const mo=d=>D(d).toLocaleDateString('en-GB',{month:'short'});
- const head=days.map(d=>`<th class="plday ${d===TODAY?'pl-today':''}"><div class="w">${wd(d)}</div><div class="n">${D(d).getDate()}</div><div class="m">${mo(d)}</div></th>`).join('');
- const rows=UNITS.map(u=>{
+ const ms=monthStart(),days=monthDays(ms);
+ const wd=d=>D(d).toLocaleDateString('en-GB',{weekday:'narrow'});
+ const head=days.map(d=>`<th class="plday ${d===TODAY?'pl-today':''}"><div class="w">${wd(d)}</div><div class="n">${D(d).getDate()}</div></th>`).join('');
+ const rows=UNITS.map(function(u){
   let cells='',i=0;
   while(i<days.length){
-   const day=days[i];
-   const b=bookings.find(bk=>blocks(bk)&&bk.unitIds.includes(u.id)&&D(day)>=D(bk.checkIn)&&D(day)<D(bk.checkOut));
-   if(b){let j=i;while(j<days.length&&D(days[j])>=D(b.checkIn)&&D(days[j])<D(b.checkOut))j++;const span=j-i;cells+=`<td colspan="${span}" class="pl-book pl-${b.status}"><div class="pl-inner" title="${esc(b.guestName||'')} · ${fmt(b.checkIn)}→${fmt(b.checkOut)}">${esc(b.guestName||'—')} · ${b.guests}p · ${CUR}${b.total} · ${esc(b.source||'DIRECT')}</div></td>`;i=j;}
-   else{cells+=`<td class="${day===TODAY?'pl-today':''}"></td>`;i++;}
+   const day=days[i],b=bookingOn(u.id,day);
+   if(b){
+    let k=i;while(k<days.length&&D(days[k])>=D(b.checkIn)&&D(days[k])<D(b.checkOut))k++;
+    const tip=`${b.guestName||'(no name)'} · ${fmt(b.checkIn)} → ${fmt(b.checkOut)} · ${b.guests}p · ${CUR}${b.total}`;
+    cells+=`<td colspan="${k-i}" class="pl-book pl-${b.status}"><div class="pl-inner" title="${esc(tip)}" onclick="mgrOpen('${b.id}')">${esc(b.guestName||'—')} · ${CUR}${b.total} · ${esc(b.source||'DIRECT')}</div></td>`;
+    i=k;
+   }else{
+    cells+=`<td class="free ${day===TODAY?'pl-today':''}" title="${L('Free','Frei')} — ${fmt(day)}" onclick="mgrNew('${u.id}','${day}')"></td>`;
+    i++;
+   }
   }
   return `<tr><td class="pl-unit">${esc(u.name)} <span class="muted">(${u.maxGuests})</span></td>${cells}</tr>`;
  }).join('');
- return `<h1>Planning calendar</h1><div class="muted">Every apartment × every day. Each bar is a booking, stretched from check-in to check-out — synced live with the site. Today is highlighted.</div>
+ return `<h1>Planning calendar</h1>
+ <div class="muted">A whole month, every apartment. Click a green day to take a booking; click a booking to open it.</div>
+ <div class="calbar">
+  <button onclick="calShift(-1)" title="Previous month">‹</button>
+  <select onchange="calSet(this.value)">${monthOptions()}</select>
+  <button onclick="calShift(1)" title="Next month">›</button>
+  <button onclick="state.calMonth=null;render()">Today</button>
+ </div>
  <div class="panel cal"><table class="pl"><thead><tr><th class="pl-unit">Apartment</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
- <div style="margin-top:10px;font-size:13px" class="muted"><span style="display:inline-block;width:12px;height:12px;background:#35568a;border-radius:3px;vertical-align:middle"></span> Confirmed &nbsp; <span style="display:inline-block;width:12px;height:12px;background:#c99a3a;border-radius:3px;vertical-align:middle"></span> On hold</div>`
+ <div style="margin-top:10px;font-size:13px" class="muted">
+  <span style="display:inline-block;width:12px;height:12px;background:#35568a;border-radius:3px;vertical-align:middle"></span> Confirmed &nbsp;
+  <span style="display:inline-block;width:12px;height:12px;background:#c99a3a;border-radius:3px;vertical-align:middle"></span> On hold &nbsp;
+  <span style="display:inline-block;width:12px;height:12px;background:#cfe8cf;border-radius:3px;vertical-align:middle"></span> Free — click to book
+ </div>`
+}
+
+/* ===== BOOKING EDITOR (manager) ===== */
+const SOURCES=['DIRECT','PHONE','WALK-IN','WHATSAPP','BOOKING.COM','AIRBNB','OTHER'];
+function mgrNew(unitId,day){
+ const out=D(day);out.setDate(out.getDate()+2);
+ state.mgr={mode:'new',id:null,unitId:unitId,checkIn:day,checkOut:out.toISOString().slice(0,10),
+            guests:2,name:'',email:'',phone:'',source:'PHONE',status:'confirmed',total:'',ref:''};
+ state.mgrErr='';render();mgrQuote();
+}
+function mgrOpen(id){
+ const b=bookings.find(x=>x.id===id);if(!b)return;
+ state.mgr={mode:'edit',id:b.id,unitId:b.unitIds[0],checkIn:b.checkIn,checkOut:b.checkOut,
+            guests:b.guests,name:b.guestName||'',email:b.guestEmail||'',phone:b.guestPhone||'',
+            source:b.source||'DIRECT',status:b.status,total:b.total,ref:b.ref};
+ state.mgrErr='';render();
+}
+function mgrClose(){state.mgr=null;state.mgrErr='';render()}
+function mgrSet(k,v){state.mgr[k]=v;if(k==='checkIn'||k==='checkOut'||k==='unitId'){render();mgrQuote()}}
+/* Ask the server what this stay costs, so manual bookings use the same price list. */
+async function mgrQuote(){
+ const m=state.mgr;if(!m||nights(m.checkIn,m.checkOut)<1)return;
+ const r=await sbRpc('vs_price_stay',{p_units:[m.unitId],p_ci:m.checkIn,p_co:m.checkOut});
+ if(state.mgr&&typeof r==='number'){state.mgr.total=r;render()}
+}
+async function mgrSave(){
+ const m=state.mgr;state.mgrErr='';
+ const n=nights(m.checkIn,m.checkOut);
+ if(n<1){state.mgrErr='Check-out must be after check-in.';render();return}
+ if(!m.name.trim()){state.mgrErr='Please enter the guest name.';render();return}
+ state.mgrBusy=true;render();
+ const busy=await sbRpc('vs_units_busy',{p_units:[m.unitId],p_ci:m.checkIn,p_co:m.checkOut,p_exclude:m.id});
+ if(busy===true){state.mgrBusy=false;state.mgrErr='That apartment is already taken for these dates.';render();return}
+ const row={unit_ids:[m.unitId],check_in:m.checkIn,check_out:m.checkOut,nights:n,guests:Number(m.guests)||1,
+            subtotal:Number(m.total)||0,discount_amount:0,extras_total:0,total:Number(m.total)||0,
+            guest_name:m.name.trim(),guest_email:m.email.trim()||null,guest_phone:m.phone.trim()||null,
+            source:m.source,status:m.status};
+ if(m.mode==='new'){
+  row.id='b'+Date.now();row.ref=makeRef();row.created_at=new Date().toISOString();
+  row.extras=[];row.lock_expires_at=null;
+  if(m.status==='confirmed')row.paid_at=new Date().toISOString();
+  await sbInsert('bookings',row);
+ }else{
+  await sbPatch('bookings','id',m.id,row);
+ }
+ state.mgrBusy=false;state.mgr=null;
+ await reloadBookings();render();
+}
+async function mgrCancel(){
+ const m=state.mgr;
+ if(!confirm('Cancel this booking? The apartment becomes free again.'))return;
+ state.mgrBusy=true;render();
+ await sbPatch('bookings','id',m.id,{status:'cancelled',cancelled_at:new Date().toISOString()});
+ state.mgrBusy=false;state.mgr=null;await reloadBookings();render();
+}
+function mgrModal(){
+ const m=state.mgr;if(!m)return '';
+ const n=nights(m.checkIn,m.checkOut);
+ const units=UNITS.map(u=>`<option value="${u.id}"${u.id===m.unitId?' selected':''}>${esc(u.name)} (${u.maxGuests})</option>`).join('');
+ const srcs=SOURCES.map(s=>`<option value="${s}"${s===m.source?' selected':''}>${s}</option>`).join('');
+ const sts=['confirmed','soft_locked','cancelled'].map(s=>`<option value="${s}"${s===m.status?' selected':''}>${s==='soft_locked'?'option / hold':s}</option>`).join('');
+ return `<div class="ovl" onclick="if(event.target===this)mgrClose()"><div class="ovl-card">
+  <h3>${m.mode==='new'?'New booking':'Booking '+esc(m.ref)}</h3>
+  <p class="muted" style="margin:0 0 6px;font-size:13px">${m.mode==='new'?'For a booking that came by phone, WhatsApp or at the door.':'Changes save straight to the calendar.'}</p>
+  <div class="ovl-row">
+   <div class="full"><label class="lbl">Apartment</label><select class="ctrl" onchange="mgrSet('unitId',this.value)">${units}</select></div>
+   <div><label class="lbl">Check-in</label><input class="ctrl" type="date" value="${m.checkIn}" onchange="mgrSet('checkIn',this.value)"></div>
+   <div><label class="lbl">Check-out</label><input class="ctrl" type="date" value="${m.checkOut}" onchange="mgrSet('checkOut',this.value)"></div>
+   <div><label class="lbl">Guests</label><input class="ctrl" type="number" min="1" max="20" value="${m.guests}" onchange="mgrSet('guests',this.value)"></div>
+   <div><label class="lbl">Nights</label><input class="ctrl" value="${n>0?n:''}" disabled></div>
+   <div class="full"><label class="lbl">Guest name</label><input class="ctrl" value="${esc(m.name)}" oninput="state.mgr.name=this.value"></div>
+   <div><label class="lbl">Email</label><input class="ctrl" type="email" value="${esc(m.email)}" oninput="state.mgr.email=this.value"></div>
+   <div><label class="lbl">Phone</label><input class="ctrl" value="${esc(m.phone)}" oninput="state.mgr.phone=this.value"></div>
+   <div><label class="lbl">Came from</label><select class="ctrl" onchange="state.mgr.source=this.value">${srcs}</select></div>
+   <div><label class="lbl">Status</label><select class="ctrl" onchange="state.mgr.status=this.value">${sts}</select></div>
+   <div class="full"><label class="lbl">Total (${CUR}) — priced from your rate list, change it if you agreed something else</label>
+     <input class="ctrl" type="number" step="1" value="${m.total}" oninput="state.mgr.total=this.value"></div>
+  </div>
+  ${state.mgrErr?`<div class="ovl-err">${esc(state.mgrErr)}</div>`:''}
+  <div class="ovl-act">
+   <button class="btn" onclick="mgrSave()" ${state.mgrBusy?'disabled':''}>${state.mgrBusy?'Saving…':(m.mode==='new'?'Create booking':'Save changes')}</button>
+   <button class="btn btn-ghost" onclick="mgrClose()">Close</button>
+   ${m.mode==='edit'&&m.status!=='cancelled'?`<button class="btn btn-ghost" style="margin-inline-start:auto;color:var(--danger-dark)" onclick="mgrCancel()">Cancel booking</button>`:''}
+  </div>
+ </div></div>`
 }
 
 /* ADMIN: MANAGE SECTIONS */
