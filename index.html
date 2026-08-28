@@ -113,6 +113,8 @@ textarea.ctrl{width:100%;padding:11px 12px;border:1px solid var(--beige-line);bo
 .badge.confirmed{background:#e2efe3;color:var(--ok)}.badge.cancelled{background:#f3d9cf;color:var(--danger-dark)}
 .badge.soft_locked{background:#efe7d6;color:#8a6d1f}
 .empty{text-align:center;padding:60px 20px;color:var(--muted)}.empty .icon{font-size:46px;margin-bottom:10px}
+.aptgroup td{background:var(--cream);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;padding:7px 10px}
+.ctrl.needs{border-color:#c9873a;background:#fdf6ee}
 .notice{background:#f7e3d6;border:1px solid #eac3ab;color:var(--danger-dark);border-radius:10px;padding:14px 16px;font-size:14px}
 .site-footer{background:var(--brand-darker);color:#e9e2d8;margin-top:50px;padding:26px 0;font-size:14px}
 .site-footer .container{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
@@ -164,6 +166,8 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text
 .pl thead th{position:sticky;top:0;z-index:3;background:#fff}
 .pl thead th.pl-unit{z-index:4}
 .pl td.free{cursor:pointer;background:#f2f8f2;border:1px solid #fff}
+.pl tr.pl-group td{background:var(--brand-darker);color:#fff;padding:5px 10px;font-size:12px;letter-spacing:.4px;text-transform:uppercase;position:sticky;left:0}
+.pl td.pl-grouphead{background:var(--brand-darker);color:#fff;font-weight:700;z-index:3}
 .pl td.free:hover{background:#cfe8cf}
 .pl td.free.pl-today{background:#d8efd8}
 .pl-inner{cursor:pointer}
@@ -262,7 +266,7 @@ function sbDelete(t,col,val){return fetch(SB_URL+'/'+t+'?'+col+'=eq.'+encodeURIC
 function sendMail(id,type){return fetch(SB_URL+'/rpc/send_booking_email',{method:'POST',headers:sbH(),body:JSON.stringify({p_id:id,p_type:type})}).catch(function(){})}
 /* every guest-side write now goes through a checked server function */
 async function sbRpc(fn,args){try{const r=await fetch(SB_URL+'/rpc/'+fn,{method:'POST',headers:sbH(),body:JSON.stringify(args||{})});if(!r.ok)return{ok:false,error:'network'};return await r.json()}catch(e){return{ok:false,error:'network'}}}
-const uFromDb=u=>({id:u.id,name:u.name,description:u.description,maxGuests:u.max_guests,basePricePerNight:Number(u.base_price_per_night),address:u.address,photo:u.photo,active:u.active,lat:(u.lat!=null?Number(u.lat):null),lng:(u.lng!=null?Number(u.lng):null)});
+const uFromDb=u=>({id:u.id,name:u.name,description:u.description,maxGuests:u.max_guests,basePricePerNight:Number(u.base_price_per_night),address:u.address,photo:u.photo,active:u.active,location:u.location||'',kind:u.kind||'apartment',sort:u.sort,lat:(u.lat!=null?Number(u.lat):null),lng:(u.lng!=null?Number(u.lng):null)});
 const sFromDb=r=>({id:r.id,unitId:r.unit_id,from:r.from_date,to:r.to_date,price:Number(r.price)});
 const cFromDb=c=>({code:c.code,type:c.type,value:Number(c.value),from:c.from_date,to:c.to_date,minNights:c.min_nights,active:c.active});
 const bFromDb=b=>({id:b.id,ref:b.ref,status:b.status,unitIds:b.unit_ids||[],checkIn:b.check_in,checkOut:b.check_out,nights:b.nights,guests:b.guests,subtotal:Number(b.subtotal),discountCode:b.discount_code,discountAmount:Number(b.discount_amount||0),total:Number(b.total),guestName:b.guest_name,guestEmail:b.guest_email,guestPhone:b.guest_phone,source:b.source,lockExpiresAt:b.lock_expires_at,createdAt:b.created_at,paidAt:b.paid_at,cancelledAt:b.cancelled_at,extrasSel:b.extras||[],extrasTotal:Number(b.extras_total||0)});
@@ -676,6 +680,22 @@ function monthOptions(){
  return out.join('');
 }
 /* A booking that occupies a night. Cancelled and expired ones free the room up. */
+/* The inventory spans seven buildings plus two garage sites, so nothing that
+   lists units may be a flat list any more. */
+function unitGroups(kind){
+ const out=[],idx={};
+ UNITS.forEach(function(u){
+  if(kind&&(u.kind||'apartment')!==kind)return;
+  const key=u.location||'Unassigned';
+  if(idx[key]===undefined){idx[key]=out.length;out.push({loc:key,units:[]})}
+  out[idx[key]].units.push(u);
+ });
+ return out;
+}
+function groupLabel(g){
+ const n=g.units.length,free=g.units.filter(function(u){return u.active}).length;
+ return esc(g.loc)+' · '+n+' unit'+(n===1?'':'s')+(free?' · '+free+' published':'');
+}
 function bookingOn(unitId,day){
  return bookings.find(function(bk){
   return blocks(bk)&&bk.unitIds.indexOf(unitId)>-1&&D(day)>=D(bk.checkIn)&&D(day)<D(bk.checkOut);
@@ -685,7 +705,10 @@ function admCalendar(){
  const ms=monthStart(),days=monthDays(ms);
  const wd=d=>D(d).toLocaleDateString('en-GB',{weekday:'narrow'});
  const head=days.map(d=>`<th class="plday ${d===TODAY?'pl-today':''}"><div class="w">${wd(d)}</div><div class="n">${D(d).getDate()}</div></th>`).join('');
- const rows=UNITS.map(function(u){
+ const span=days.length+1;
+ const rows=unitGroups().map(function(g){
+  const head=`<tr class="pl-group"><td class="pl-unit pl-grouphead">${groupLabel(g)}</td><td colspan="${span-1}"></td></tr>`;
+  return head+g.units.map(function(u){
   let cells='',i=0;
   while(i<days.length){
    const day=days[i],b=bookingOn(u.id,day);
@@ -699,7 +722,9 @@ function admCalendar(){
     i++;
    }
   }
-  return `<tr><td class="pl-unit">${esc(u.name)} <span class="muted">(${u.maxGuests})</span></td>${cells}</tr>`;
+  const cap=u.maxGuests?` <span class="muted">(${u.maxGuests})</span>`:'';
+  return `<tr><td class="pl-unit">${esc(u.name)}${cap}</td>${cells}</tr>`;
+  }).join('');
  }).join('');
  return `<h1>Planning calendar</h1>
  <div class="muted">A whole month, every apartment. Click a green day to take a booking; click a booking to open it.</div>
@@ -808,10 +833,39 @@ let TASKS=(function(){try{return JSON.parse(localStorage.getItem('vs-tasks'))||n
 const saveTasks=()=>localStorage.setItem('vs-tasks',JSON.stringify(TASKS));
 
 function admApartments(){
- const rows=UNITS.map(u=>`<tr><td><input class="ctrl" style="min-width:150px" value="${esc(u.name)}" onchange="setUnitField('${u.id}','name',this.value)"></td><td><input class="ctrl" type="number" style="width:74px" value="${u.maxGuests}" onchange="setUnitField('${u.id}','maxGuests',this.value)"></td><td><input class="ctrl" type="number" style="width:92px" value="${u.basePricePerNight}" onchange="setUnitField('${u.id}','basePricePerNight',this.value)"> ${CUR}</td><td>${esc(u.address)}</td></tr>`).join('');
- return `<h1>Apartments</h1><div class="muted">Your rental units. Edits apply to the booking site immediately.</div>
-  <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${UNITS.length} apartments</strong><button class="btn btn-sm" onclick="addUnit()">+ Add apartment</button></div>
-  <div style="overflow-x:auto"><table class="tbl" style="margin-top:8px"><thead><tr><th>Name</th><th>Sleeps</th><th>Base price / night</th><th>Address</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+ const groups=unitGroups();
+ const missing=UNITS.filter(function(u){return (u.kind||'apartment')==='apartment'&&!u.maxGuests}).length;
+ const body=groups.map(function(g){
+  const head=`<tr class="aptgroup"><td colspan="5">${groupLabel(g)}</td></tr>`;
+  const rows=g.units.map(function(u){
+   const cap=u.maxGuests==null?'':u.maxGuests;
+   return `<tr>
+    <td><input class="ctrl" style="min-width:170px" value="${esc(u.name)}" onchange="setUnitField('${u.id}','name',this.value)"></td>
+    <td>${u.kind==='garage'?'<span class="muted">parking</span>':`<input class="ctrl${cap===''?' needs':''}" type="number" style="width:74px" value="${cap}" placeholder="?" onchange="setUnitField('${u.id}','maxGuests',this.value)">`}</td>
+    <td><input class="ctrl" type="number" style="width:92px" value="${u.basePricePerNight||''}" placeholder="—" onchange="setUnitField('${u.id}','basePricePerNight',this.value)"> ${CUR}</td>
+    <td style="text-align:center"><input type="checkbox" ${u.active?'checked':''} onchange="setUnitActive('${u.id}',this.checked)" title="Show on the guest website"></td>
+    <td class="muted" style="font-size:12px">${esc(u.location||u.address||'')}</td>
+   </tr>`;
+  }).join('');
+  return head+rows;
+ }).join('');
+ return `<h1>Apartments</h1>
+  <div class="muted">${UNITS.length} units across ${groups.length} addresses. Tick <em>Published</em> to put one on the guest website — it needs a nightly rate first.</div>
+  ${missing?`<div class="notice" style="margin-top:12px">${missing} apartments still have no guest capacity. Fill in the <strong>Sleeps</strong> column so the booking engine can match them to a party size.</div>`:''}
+  <div class="panel" style="margin-top:12px">
+   <div style="display:flex;justify-content:space-between;align-items:center">
+    <strong>${UNITS.filter(function(u){return u.active}).length} published · ${UNITS.length} total</strong>
+    <button class="btn btn-sm" onclick="addUnit()">+ Add unit</button>
+   </div>
+   <div style="overflow-x:auto"><table class="tbl" style="margin-top:8px">
+    <thead><tr><th>Name</th><th>Sleeps</th><th>Rate / night</th><th>Published</th><th>Address</th></tr></thead>
+    <tbody>${body}</tbody></table></div>
+  </div>`;
+}
+async function setUnitActive(id,on){
+ const u=getUnit(id);
+ if(on&&!u.basePricePerNight){alert('Set a nightly rate before publishing this unit.');render();return}
+ u.active=on;await sbPatch('units','id',id,{active:on});render();
 }
 function setUnitField(id,f,v){const u=getUnit(id);const col={name:'name',address:'address',maxGuests:'max_guests',basePricePerNight:'base_price_per_night'}[f];if(f==='name'||f==='address')u[f]=v;else u[f]=Math.max(0,parseInt(v)||0);sbPatch('units','id',id,{[col]:u[f]})}
 async function addUnit(){const name=prompt('Apartment name:','New Apartment');if(!name)return;const price=parseInt(prompt('Base price per night:','120'))||120;const guests=parseInt(prompt('Max guests:','2'))||2;const id='u'+Date.now();await sbInsert('units',{id,name,description:'A comfortable Vienna apartment.',max_guests:guests,base_price_per_night:price,address:'Vienna, Austria',photo:'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=900&q=70',active:true});await reloadUnits();render()}
