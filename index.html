@@ -176,6 +176,16 @@ label.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text
 .pl td.free.pl-today{background:#d8efd8}
 .pl-inner{cursor:pointer}
 .pl-inner:hover{filter:brightness(1.15)}
+.ops{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:16px 0 6px}
+.ops .k{background:#fff;border:1px solid var(--beige-line);border-radius:11px;padding:14px 16px}
+.ops .k .n{font-size:29px;font-weight:700;line-height:1.05}
+.ops .k .l{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:5px}
+.ops .k .p{font-size:12.5px;color:var(--muted);margin-top:3px}
+.ops .k.go .n{color:#8a5a2b} .ops .k.in .n{color:#2f6b4f} .ops .k.st .n{color:#35568a} .ops .k.cl .n{color:#7a3f8a}
+.oplist{margin-top:22px}
+.oplist h3{font-family:Georgia,serif;font-size:17px;margin:0 0 8px}
+.oplist .none{color:var(--muted);font-size:14px;padding:10px 0}
+.fwd td.z{color:var(--beige-line)}
 .calbar{display:flex;align-items:center;gap:10px;margin:14px 0}
 .calbar select{padding:7px 10px;border:1px solid var(--beige-line);border-radius:8px;font-size:14px;background:#fff}
 .calbar button{padding:7px 13px;border:1px solid var(--beige-line);background:#fff;border-radius:8px;cursor:pointer;font-size:15px}
@@ -613,7 +623,7 @@ async function doAdminLogin(){
   const d=await r.json();
   if(!r.ok||!d.access_token){state.adminErr='Wrong username or password.';state.apass='';render();return}
   SB_TOKEN=d.access_token;adminAuthed=true;state.apass='';
-  state.screen='admin';state.adminTab='dashboard';window.scrollTo(0,0);render();
+  state.screen='admin';state.adminTab='today';window.scrollTo(0,0);render();
   loadManagerData();
  }catch(e){state.adminErr='Could not reach the server. Please try again.';render()}
 }
@@ -622,7 +632,8 @@ function adminGo(tab){state.adminTab=tab;window.scrollTo(0,0);render()}
 function adminLayout(){
  const A=t=>state.adminTab===t?'active':'';
  let main='';
- if(state.adminTab==='dashboard')main=admDashboard();
+ if(state.adminTab==='today')main=admToday();
+ else if(state.adminTab==='dashboard')main=admDashboard();
  else if(state.adminTab==='bookings')main=admBookings();
  else if(state.adminTab==='calendar')main=admCalendar();
  else if(state.adminTab==='prices')main=admPrices();
@@ -640,6 +651,7 @@ function adminLayout(){
  <div class="admin-layout">
   <nav class="admin-side">
    <div class="grp">Cockpit</div>
+   <a class="${A('today')}" onclick="adminGo('today')">☀ Today</a>
    <a class="${A('dashboard')}" onclick="adminGo('dashboard')">▤ Dashboard</a>
    <a class="${A('bookings')}" onclick="adminGo('bookings')">≣ Bookings</a>
    <a class="${A('calendar')}" onclick="adminGo('calendar')">▦ Planning calendar</a>
@@ -804,6 +816,75 @@ function admCalendar(){
   <span style="display:inline-block;width:12px;height:12px;background:#c99a3a;border-radius:3px;vertical-align:middle"></span> On hold &nbsp;
   <span style="display:inline-block;width:12px;height:12px;background:#cfe8cf;border-radius:3px;vertical-align:middle"></span> Free — click to book
  </div>`
+}
+
+/* ===== THE OPERATING DAY =====
+   Mirrors how a working PMS frames it: a unit that is emptied AND a unit that
+   is still occupied both need housekeeping, so "to clean" is departures plus
+   stayers — not just turnovers. */
+function opsFor(day){
+ const live=bookings.filter(b=>b.status==='confirmed'||b.status==='awaiting_payment');
+ const out=live.filter(b=>b.checkOut===day);
+ const inn=live.filter(b=>b.checkIn===day);
+ const stay=live.filter(b=>D(b.checkIn)<D(day)&&D(b.checkOut)>D(day));
+ const pax=a=>a.reduce((s,b)=>s+(Number(b.guests)||0),0);
+ const units=a=>a.reduce((s,b)=>s+b.unitIds.length,0);
+ return {out:out,inn:inn,stay:stay,
+         nOut:units(out),pOut:pax(out),nIn:units(inn),pIn:pax(inn),
+         nStay:units(stay),pStay:pax(stay),
+         nClean:units(out)+units(stay),pClean:pax(out)+pax(stay)};
+}
+function opsRow(b,which){
+ const u=b.unitIds.map(id=>{const x=getUnit(id);return x?x.name:id}).join(' + ');
+ const loc=(()=>{const x=getUnit(b.unitIds[0]);return x&&x.location?x.location:''})();
+ const phone=b.guestPhone?`<a href="tel:${esc(b.guestPhone)}">${esc(b.guestPhone)}</a>`:'<span class="muted">—</span>';
+ const money=b.status==='awaiting_payment'
+   ? `<span class="chip" style="background:#f7e3d6;color:#8a4a2b">${L('unpaid','offen')} ${CUR}${Number(b.total)-Number(b.paidAmount||0)}</span>`
+   : `<span class="chip" style="background:#e7f0e7;color:#2f6b4f">${L('paid','bezahlt')}</span>`;
+ const when=which==='out'?fmt(b.checkIn)+' → '+fmt(b.checkOut):fmt(b.checkIn)+' → '+fmt(b.checkOut);
+ return `<tr onclick="mgrOpen('${b.id}')" style="cursor:pointer">
+  <td><strong>${esc(u)}</strong>${loc?`<div class="muted" style="font-size:12px">${esc(loc)}</div>`:''}</td>
+  <td>${esc(b.guestName||'—')}</td><td>${b.guests}</td><td>${phone}</td>
+  <td class="muted" style="font-size:13px">${when}</td><td>${money}</td></tr>`;
+}
+function opsTable(list,which,emptyMsg){
+ if(!list.length)return `<div class="none">${emptyMsg}</div>`;
+ return `<div style="overflow-x:auto"><table class="tbl"><thead><tr>
+   <th>${L('Apartment','Apartment')}</th><th>${L('Guest','Gast')}</th><th>${L('Pax','Pers.')}</th>
+   <th>${L('Phone','Telefon')}</th><th>${L('Stay','Aufenthalt')}</th><th>${L('Payment','Zahlung')}</th>
+  </tr></thead><tbody>${list.map(b=>opsRow(b,which)).join('')}</tbody></table></div>`;
+}
+function admToday(){
+ const t=opsFor(TODAY),tm=opsFor(iso(1));
+ const fwd=[];
+ for(let i=0;i<16;i++){
+  const d=iso(i),o=opsFor(d);
+  fwd.push(`<tr${d===TODAY?' style="background:#f2f8f2"':''}>
+   <td><strong>${fmtShort(d)}</strong> <span class="muted">${D(d).toLocaleDateString('en-GB',{weekday:'short'})}</span></td>
+   <td class="${o.nOut?'':'z'}">${o.nOut||'·'}${o.nOut?` <span class="muted">/ ${o.pOut}p</span>`:''}</td>
+   <td class="${o.nIn?'':'z'}">${o.nIn||'·'}${o.nIn?` <span class="muted">/ ${o.pIn}p</span>`:''}</td>
+   <td class="${o.nStay?'':'z'}">${o.nStay||'·'}${o.nStay?` <span class="muted">/ ${o.pStay}p</span>`:''}</td>
+   <td class="${o.nClean?'':'z'}"><strong>${o.nClean||'·'}</strong>${o.nClean?` <span class="muted">/ ${o.pClean}p</span>`:''}</td></tr>`);
+ }
+ return `<h1>${L('Today','Heute')}</h1>
+ <div class="muted">${D(TODAY).toLocaleDateString(LOCALE(),{weekday:'long',day:'numeric',month:'long',year:'numeric'})} — ${L('everything happening in your apartments right now.','alles, was gerade in Ihren Apartments passiert.')}</div>
+ <div class="ops">
+  <div class="k go"><div class="n">${t.nOut}</div><div class="l">${L('Departures','Abreisen')}</div><div class="p">${t.pOut} ${L('guests','Gäste')}</div></div>
+  <div class="k in"><div class="n">${t.nIn}</div><div class="l">${L('Arrivals','Anreisen')}</div><div class="p">${t.pIn} ${L('guests','Gäste')}</div></div>
+  <div class="k st"><div class="n">${t.nStay}</div><div class="l">${L('Staying','Bleiber')}</div><div class="p">${t.pStay} ${L('guests','Gäste')}</div></div>
+  <div class="k cl"><div class="n">${t.nClean}</div><div class="l">${L('To clean today','Heute zu reinigen')}</div><div class="p">${t.pClean} ${L('guests','Gäste')}</div></div>
+ </div>
+ <div class="oplist"><h3>${L('Arriving today','Heute anreisend')}</h3>${opsTable(t.inn,'in',L('Nobody arrives today.','Heute keine Anreisen.'))}</div>
+ <div class="oplist"><h3>${L('Leaving today','Heute abreisend')}</h3>${opsTable(t.out,'out',L('Nobody leaves today.','Heute keine Abreisen.'))}</div>
+ <div class="oplist"><h3>${L('Arriving tomorrow','Morgen anreisend')} <span class="muted" style="font-weight:400;font-size:14px">· ${tm.nIn} ${L('apartments','Apartments')}, ${tm.pIn} ${L('guests','Gäste')}</span></h3>${opsTable(tm.inn,'in',L('Nobody arrives tomorrow.','Morgen keine Anreisen.'))}</div>
+ <div class="oplist"><h3>${L('In the apartments now','Aktuell im Haus')}</h3>${opsTable(t.stay,'stay',L('No guests in house.','Keine Gäste im Haus.'))}</div>
+ <div class="oplist"><h3>${L('The next two weeks','Die nächsten zwei Wochen')}</h3>
+  <div class="panel" style="overflow-x:auto"><table class="tbl fwd"><thead><tr>
+   <th>${L('Date','Datum')}</th><th>${L('Departures','Abreisen')}</th><th>${L('Arrivals','Anreisen')}</th>
+   <th>${L('Staying','Bleiber')}</th><th>${L('To clean','Zu reinigen')}</th>
+  </tr></thead><tbody>${fwd.join('')}</tbody></table></div>
+  <p class="muted" style="font-size:13px;margin-top:8px">${L('To clean = apartments being vacated plus apartments still occupied — both need housekeeping.','Zu reinigen = frei werdende plus weiterhin belegte Apartments — beide brauchen Reinigung.')}</p>
+ </div>`;
 }
 
 /* ===== BOOKING EDITOR (manager) ===== */
