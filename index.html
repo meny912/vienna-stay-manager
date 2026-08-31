@@ -229,7 +229,7 @@ const KEY='vienna-stay-bookings-v2';
 const loadB=()=>{try{return JSON.parse(localStorage.getItem(KEY))||null}catch(e){return null}};
 const saveB=b=>localStorage.setItem(KEY,JSON.stringify(b));
 const makeRef=()=>'VS-'+Math.random().toString(36).slice(2,7).toUpperCase();
-const blocks=b=>b.status==='confirmed'||(b.status==='soft_locked'&&new Date(b.lockExpiresAt)>new Date());
+const blocks=b=>b.status==='confirmed'||b.status==='awaiting_payment'||(b.status==='soft_locked'&&new Date(b.lockExpiresAt)>new Date());
 const unitBusy=(uid,ci,co,ex)=>bookings.some(b=>b.id!==ex&&blocks(b)&&b.unitIds.includes(uid)&&overlap(ci,co,b.checkIn,b.checkOut));
 /* A unit with no rate or no capacity is not sellable yet: it is shown to guests,
    but on request only — never priced at zero. */
@@ -281,7 +281,7 @@ async function sbRpc(fn,args){try{const r=await fetch(SB_URL+'/rpc/'+fn,{method:
 const uFromDb=u=>({id:u.id,name:u.name,description:u.description,maxGuests:u.max_guests,basePricePerNight:Number(u.base_price_per_night),address:u.address,photo:u.photo,active:u.active,location:u.location||'',kind:u.kind||'apartment',sort:u.sort,location:u.location||'',kind:u.kind||'apartment',sort:u.sort,lat:(u.lat!=null?Number(u.lat):null),lng:(u.lng!=null?Number(u.lng):null)});
 const sFromDb=r=>({id:r.id,unitId:r.unit_id,from:r.from_date,to:r.to_date,price:Number(r.price)});
 const cFromDb=c=>({code:c.code,type:c.type,value:Number(c.value),from:c.from_date,to:c.to_date,minNights:c.min_nights,active:c.active});
-const bFromDb=b=>({id:b.id,ref:b.ref,status:b.status,unitIds:b.unit_ids||[],checkIn:b.check_in,checkOut:b.check_out,nights:b.nights,guests:b.guests,subtotal:Number(b.subtotal),discountCode:b.discount_code,discountAmount:Number(b.discount_amount||0),total:Number(b.total),guestName:b.guest_name,guestEmail:b.guest_email,guestPhone:b.guest_phone,source:b.source,lockExpiresAt:b.lock_expires_at,createdAt:b.created_at,paidAt:b.paid_at,cancelledAt:b.cancelled_at,extrasSel:b.extras||[],extrasTotal:Number(b.extras_total||0)});
+const bFromDb=b=>({id:b.id,ref:b.ref,status:b.status,unitIds:b.unit_ids||[],checkIn:b.check_in,checkOut:b.check_out,nights:b.nights,guests:b.guests,subtotal:Number(b.subtotal),discountCode:b.discount_code,discountAmount:Number(b.discount_amount||0),total:Number(b.total),guestName:b.guest_name,guestEmail:b.guest_email,guestPhone:b.guest_phone,source:b.source,lockExpiresAt:b.lock_expires_at,createdAt:b.created_at,paidAt:b.paid_at,cancelledAt:b.cancelled_at,extrasSel:b.extras||[],extrasTotal:Number(b.extras_total||0),paidAmount:Number(b.paid_amount||0),paymentDue:b.payment_due,paymentMethod:b.payment_method});
 const bToDb=b=>({id:b.id,ref:b.ref,status:b.status,unit_ids:b.unitIds,check_in:b.checkIn,check_out:b.checkOut,nights:b.nights,guests:b.guests,subtotal:b.subtotal,discount_code:b.discountCode||null,discount_amount:b.discountAmount||0,total:b.total,guest_name:b.guestName||null,guest_email:b.guestEmail||null,guest_phone:b.guestPhone||null,source:b.source||'DIRECT',lock_expires_at:b.lockExpiresAt});
 async function reloadUnits(){const u=await sbGet('units?select=*&order=sort,id');if(u.length){UNITS.length=0;u.map(uFromDb).forEach(x=>UNITS.push(x))}}
 async function reloadSeasons(){const s=await sbGet('seasonal_rates?select=*&order=id');SEASONAL.length=0;s.map(sFromDb).forEach(x=>SEASONAL.push(x))}
@@ -290,6 +290,9 @@ async function reloadCodes(){const c=await sbGet('discount_codes?select=*&order=
 async function reloadBusy(){const rows=await sbGet('public_busy?select=*');bookings.length=0;(rows||[]).forEach(function(r){bookings.push({id:null,ref:null,status:'confirmed',unitIds:r.unit_ids||[],checkIn:r.check_in,checkOut:r.check_out})})}
 /* Manager cockpit only - requires a signed-in manager. */
 async function reloadBookings(){const b=await sbGet('bookings?select=*');bookings.length=0;b.map(bFromDb).forEach(x=>bookings.push(x))}
+let SETTINGS={};
+async function reloadSettings(){const r=await sbGet('app_settings?select=key,value');SETTINGS={};(r||[]).forEach(function(x){SETTINGS[x.key]=x.value})}
+const SET=(k,d)=>SETTINGS[k]||d;
 let EXTRAS=[];
 async function reloadExtras(){const e=await sbGet('extras?select=*&order=sort,id');EXTRAS=e||[]}
 function activeExtras(){return EXTRAS.filter(function(e){return e.active!==false})}
@@ -299,7 +302,7 @@ function extrasSum(n){return selExtras(n).reduce(function(s,e){return s+e.amount
 let EMAILS=[];
 async function reloadEmails(){const e=await sbGet('email_templates?select=*&order=sort,id');EMAILS=e||[]}
 function fillTemplate(txt,b){if(!txt)return '';const u=b?unitsLabel(b):'';return String(txt).replace(/\{guest\}/g,(b&&b.guestName)||'').replace(/\{apartment\}/g,u).replace(/\{checkin\}/g,b?fmt(b.checkIn):'').replace(/\{checkout\}/g,b?fmt(b.checkOut):'').replace(/\{nights\}/g,b?b.nights:'').replace(/\{guests\}/g,b?b.guests:'').replace(/\{reference\}/g,(b&&b.ref)||'').replace(/\{total\}/g,b?CUR+b.total:'')}
-async function loadAll(){await Promise.all([reloadUnits(),reloadSeasons(),reloadExtras()]);if(adminAuthed)render()}
+async function loadAll(){await Promise.all([reloadUnits(),reloadSeasons(),reloadExtras(),reloadSettings()]);if(adminAuthed)render()}
 /* Discount codes and email templates are manager data - loaded only after sign-in. */
 async function loadManagerData(){await Promise.all([reloadBookings(),reloadCodes(),reloadEmails(),reloadFaqs()]);render()}
 
@@ -509,14 +512,19 @@ function paymentS(){
  return `<section class="section container">
   <div class="summary-bar"><div><strong>${L('Payment','Zahlung')}</strong> <span class="muted">· ${esc(label)} · ${fmt(b.checkIn)} → ${fmt(b.checkOut)}</span></div><span class="timer" id="tmr">⏳ ${L('Held for','Reserviert für')} ${mmss(remainSecs())}</span></div>
   <div class="two-col">
-   <div class="card pad"><h3 style="margin-top:0">${L('Card details','Kartendaten')}</h3><p class="muted" style="font-size:13px;margin-top:0">${L('Demo mode — no real card is charged. In the live site this is Stripe.','Demo-Modus – es wird keine echte Karte belastet. Im Live-Betrieb erfolgt dies über Stripe.')}</p>
-    <label class="lbl">${L('Card number','Kartennummer')}</label><input class="ctrl" placeholder="4242 4242 4242 4242">
-    <div class="form-grid" style="margin-top:14px"><div><label class="lbl">${L('Expiry','Gültig bis')}</label><input class="ctrl" placeholder="12 / 28"></div><div><label class="lbl">CVC</label><input class="ctrl" placeholder="123"></div></div>
-    <button class="btn btn-block" id="payBtn" style="margin-top:18px" onclick="pay()">${L('Pay','Zahlen')} ${CUR}${b.total} ${L('Now','jetzt')}</button>
+   <div class="card pad"><h3 style="margin-top:0">${L('Pay by bank transfer','Zahlung per Überweisung')}</h3>
+    <p class="muted" style="font-size:14px;margin-top:0">${L('Confirm your reservation now. We will then show you our account details and hold the apartment for you until the transfer arrives.','Bestätigen Sie jetzt Ihre Reservierung. Anschliessend erhalten Sie unsere Kontodaten; das Apartment bleibt für Sie reserviert, bis die Überweisung eingeht.')}</p>
+    <div class="breakdown" style="margin-top:8px">
+     <div class="line"><span>${L('Payable to','Zahlungsempfänger')}</span><strong>${esc(SET('company_name','Vienna Stay Apartments'))}</strong></div>
+     <div class="line"><span>${L('Method','Zahlungsart')}</span><span>${L('SEPA bank transfer','SEPA-Überweisung')}</span></div>
+     <div class="line"><span>${L('Transfer within','Zu überweisen binnen')}</span><span>${SET('pay_within_days','3')} ${L('days','Tagen')}</span></div>
+    </div>
+    <button class="btn btn-block" id="payBtn" style="margin-top:18px" onclick="pay()">${L('Confirm reservation','Reservierung bestätigen')} · ${CUR}${b.total}</button>
+    <p class="muted" style="font-size:12px;margin-top:10px">${L('No card is asked for and none is charged. You transfer the amount yourself from your own bank.','Es werden keine Kartendaten erhoben und nichts abgebucht. Sie überweisen den Betrag selbst von Ihrer Bank.')}</p>
    </div>
    <div class="card pad"><h3 style="margin-top:0">${L('Order summary','Bestellübersicht')}</h3>
     <div class="breakdown"><div class="line"><span>${L('Subtotal','Zwischensumme')}</span><span>${CUR}${b.subtotal}</span></div>${b.discountAmount>0?`<div class="line discount"><span>${L('Discount','Rabatt')} (${esc(b.discountCode)})</span><span>−${CUR}${b.discountAmount}</span></div>`:''}${(b.extrasSel||[]).map(e=>`<div class="line"><span>${esc(extraLabel(e))}</span><span>${CUR}${e.amount}</span></div>`).join('')}<div class="line grand"><span>${L('Total due','Zu zahlen')}</span><span>${CUR}${b.total}</span></div></div>
-    <p class="muted" style="font-size:13px">${L('Paid in full. No refund on cancellation.','Vollständige Zahlung. Keine Rückerstattung bei Stornierung.')}</p>
+    <p class="muted" style="font-size:13px">${L('Payable in full by transfer. No refund on cancellation.','Vollständig per Überweisung zu zahlen. Keine Rückerstattung bei Stornierung.')}</p>
    </div>
   </div></section>`
 }
@@ -524,13 +532,13 @@ async function pay(){
  if(remainSecs()<=0)return;
  const btn=document.getElementById('payBtn');btn.disabled=true;btn.textContent=L('Processing…','Wird verarbeitet…');
  const b=currentB();
- const res=await sbRpc('vs_confirm',{p_id:b.id});
+ const res=await sbRpc('vs_reserve',{p_id:b.id});
  if(!res||!res.ok){
-  btn.disabled=false;btn.textContent=L('Pay now','Jetzt bezahlen');
-  alert(res&&res.error==='taken'?L('Sorry — that apartment was just taken. Your card was not charged.','Leider wurde dieses Apartment gerade gebucht. Es wurde nichts abgebucht.')
+  btn.disabled=false;btn.textContent=L('Confirm reservation','Reservierung bestätigen');
+  alert(res&&res.error==='taken'?L('Sorry — that apartment was just taken. Nothing was charged.','Leider wurde dieses Apartment gerade gebucht. Es wurde nichts berechnet.')
                                 :L('Your hold has expired. Please search again.','Ihre Reservierung ist abgelaufen. Bitte erneut suchen.'));
   render();return}
- b.status='confirmed';b.paidAt=new Date().toISOString();
+ b.status='awaiting_payment';b.paymentDue=res.due;
  /* the confirmation email is sent by the server inside vs_confirm */
  go('confirmation');
 }
@@ -539,9 +547,20 @@ async function pay(){
 function confirmationS(){
  const b=currentB(),label=unitsLabel(b);
  return `<section class="section container"><div class="card pad" style="max-width:620px;margin:0 auto;text-align:center">
-  <div style="font-size:46px">✓</div><h2 style="margin-top:6px">${L('Booking confirmed','Buchung bestätigt')}</h2><p class="muted">${L('A confirmation has been sent to','Eine Bestätigung wurde gesendet an')} ${esc(b.guestEmail)}.</p>
+  <div style="font-size:46px">✓</div><h2 style="margin-top:6px">${L('Reservation received','Reservierung eingegangen')}</h2><p class="muted">${L('We are holding this apartment for you. It is yours once the transfer arrives.','Wir halten dieses Apartment für Sie. Mit Eingang der Überweisung ist es verbindlich gebucht.')}</p>
+  <div class="notice" style="text-align:left">
+   <strong>${L('Please transfer','Bitte überweisen Sie')} ${CUR}${b.total} ${L('by','bis')} ${b.paymentDue?fmt(b.paymentDue):''}</strong>
+   <div class="breakdown" style="margin-top:10px">
+    <div class="line"><span>${L('Account holder','Kontoinhaber')}</span><strong>${esc(SET('company_name',''))}</strong></div>
+    <div class="line"><span>IBAN</span><strong style="font-family:ui-monospace,monospace">${esc(SET('bank_iban',''))}</strong></div>
+    <div class="line"><span>BIC</span><strong style="font-family:ui-monospace,monospace">${esc(SET('bank_bic',''))}</strong></div>
+    <div class="line"><span>${L('Reference — please include','Verwendungszweck – bitte angeben')}</span><strong>${b.ref}</strong></div>
+    <div class="line grand"><span>${L('Amount','Betrag')}</span><span>${CUR}${b.total}</span></div>
+   </div>
+   <p style="margin:10px 0 0;font-size:13px">${L('Without the reference we cannot match your payment. If nothing arrives by the date above, the apartment is released.','Ohne den Verwendungszweck können wir Ihre Zahlung nicht zuordnen. Geht bis zum genannten Datum nichts ein, wird das Apartment wieder freigegeben.')}</p>
+  </div>
   <div class="notice" style="background:#eef3ec;border-color:#cfe0cd;color:#3f5f45;text-align:left">${L('Your booking reference:','Ihre Buchungsnummer:')} <strong>${b.ref}</strong><br>${L("Keep this — you'll need it (with your email) to view your booking.",'Bewahren Sie diese auf – Sie benötigen sie (mit Ihrer E-Mail), um Ihre Buchung anzusehen.')}</div>
-  <div class="breakdown" style="text-align:left;margin-top:18px"><div class="line"><span>${b.unitIds.length>1?'Apartments':'Apartment'}</span><strong>${esc(label)}</strong></div><div class="line"><span>${L('Dates','Daten')}</span><span>${fmt(b.checkIn)} → ${fmt(b.checkOut)}</span></div><div class="line"><span>${L('Guests','Gäste')}</span><span>${b.guests}</span></div>${(b.extrasSel||[]).map(e=>`<div class="line"><span>${esc(extraLabel(e))}</span><span>${CUR}${e.amount}</span></div>`).join('')}<div class="line grand"><span>${L('Paid','Bezahlt')}</span><span>${CUR}${b.total}</span></div></div>
+  <div class="breakdown" style="text-align:left;margin-top:18px"><div class="line"><span>${b.unitIds.length>1?'Apartments':'Apartment'}</span><strong>${esc(label)}</strong></div><div class="line"><span>${L('Dates','Daten')}</span><span>${fmt(b.checkIn)} → ${fmt(b.checkOut)}</span></div><div class="line"><span>${L('Guests','Gäste')}</span><span>${b.guests}</span></div>${(b.extrasSel||[]).map(e=>`<div class="line"><span>${esc(extraLabel(e))}</span><span>${CUR}${e.amount}</span></div>`).join('')}<div class="line grand"><span>${L('To pay','Zu zahlen')}</span><span>${CUR}${b.total}</span></div></div>
   <div class="divider"></div><div style="text-align:left"><strong>${L('Check-in instructions','Check-in-Hinweise')}</strong><p class="muted" style="margin-top:4px">${L('The address and access details will appear here. (Placeholder — the owner will provide this text.)','Adresse und Zugangsdaten erscheinen hier. (Platzhalter – der Eigentümer stellt diesen Text bereit.)')}</p></div>
   <button class="btn btn-block" style="margin-top:10px" onclick="openMBfor('${b.guestEmail}','${b.ref}')">${L('View My Bookings','Meine Buchungen ansehen')}</button>
  </div></section>`
@@ -692,6 +711,15 @@ function admBookings(){
    <input class="ctrl" style="max-width:220px;margin-left:auto" placeholder="Search name / ref / apartment" value="${esc(state.adminSearch)}" oninput="state.adminSearch=this.value;render()"></div>
   <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Ref</th><th>Guest</th><th>Apartment(s)</th><th>Check-in</th><th>Check-out</th><th>Nights</th><th>Guests</th><th>Status</th><th>Total</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="10" class="muted" style="padding:20px;text-align:center">No bookings match.</td></tr>`}</tbody></table></div>
  </div>`
+}
+async function admMarkPaid(id){
+ const b=bookings.find(x=>x.id===id);if(!b)return;
+ const outstanding=Number(b.total)-Number(b.paidAmount||0);
+ const v=prompt('Amount received ('+CUR+'). Outstanding: '+CUR+outstanding, String(outstanding));
+ if(v===null)return;
+ const amt=Number(v);if(!(amt>0))return;
+ await sbRpc('vs_mark_paid',{p_id:id,p_amount:amt,p_method:'bank_transfer'});
+ await reloadBookings();render();
 }
 function admCancel(id){if(!confirm('Cancel this booking for the guest? No refund will be issued.'))return;const b=bookings.find(x=>x.id===id);b.status='cancelled';b.cancelledAt=new Date().toISOString();sbPatch('bookings','id',id,{status:'cancelled',cancelled_at:b.cancelledAt});render()}
 function monthStart(){return state.calMonth||(TODAY.slice(0,8)+'01')}
