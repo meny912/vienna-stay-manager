@@ -117,6 +117,7 @@ textarea.ctrl{width:100%;padding:11px 12px;border:1px solid var(--beige-line);bo
 .ctrl.needs{border-color:#c9873a;background:#fdf6ee}
 .ph{width:100%;height:190px;display:grid;place-items:center;background:linear-gradient(135deg,#8a7d6b,#554c41);color:#fff;font-family:Georgia,serif;font-size:20px;letter-spacing:1px;text-align:center;padding:14px}
 .ph span{opacity:.92}
+.ph.gallery{height:340px;border-radius:12px;font-size:27px}
 .bldg{font-family:Georgia,serif;font-size:19px;margin:26px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--beige-line)}
 .onreq{margin-top:44px;padding-top:8px}
 .notice{background:#f7e3d6;border:1px solid #eac3ab;color:var(--danger-dark);border-radius:10px;padding:14px 16px;font-size:14px}
@@ -288,7 +289,7 @@ function sbDelete(t,col,val){return fetch(SB_URL+'/'+t+'?'+col+'=eq.'+encodeURIC
 function sendMail(id,type){return fetch(SB_URL+'/rpc/send_booking_email',{method:'POST',headers:sbH(),body:JSON.stringify({p_id:id,p_type:type})}).catch(function(){})}
 /* every guest-side write now goes through a checked server function */
 async function sbRpc(fn,args){try{const r=await fetch(SB_URL+'/rpc/'+fn,{method:'POST',headers:sbH(),body:JSON.stringify(args||{})});if(!r.ok)return{ok:false,error:'network'};return await r.json()}catch(e){return{ok:false,error:'network'}}}
-const uFromDb=u=>({id:u.id,name:u.name,description:u.description,maxGuests:u.max_guests,basePricePerNight:Number(u.base_price_per_night),address:u.address,photo:u.photo,active:u.active,location:u.location||'',kind:u.kind||'apartment',sort:u.sort,location:u.location||'',kind:u.kind||'apartment',sort:u.sort,lat:(u.lat!=null?Number(u.lat):null),lng:(u.lng!=null?Number(u.lng):null)});
+const uFromDb=u=>({id:u.id,name:u.name,description:u.description,maxGuests:u.max_guests,basePricePerNight:Number(u.base_price_per_night),address:u.address,photo:u.photo,active:u.active,location:u.location||'',kind:u.kind||'apartment',sort:u.sort,lat:(u.lat!=null?Number(u.lat):null),lng:(u.lng!=null?Number(u.lng):null)});
 const sFromDb=r=>({id:r.id,unitId:r.unit_id,from:r.from_date,to:r.to_date,price:Number(r.price)});
 const cFromDb=c=>({code:c.code,type:c.type,value:Number(c.value),from:c.from_date,to:c.to_date,minNights:c.min_nights,active:c.active});
 const bFromDb=b=>({id:b.id,ref:b.ref,status:b.status,unitIds:b.unit_ids||[],checkIn:b.check_in,checkOut:b.check_out,nights:b.nights,guests:b.guests,subtotal:Number(b.subtotal),discountCode:b.discount_code,discountAmount:Number(b.discount_amount||0),total:Number(b.total),guestName:b.guest_name,guestEmail:b.guest_email,guestPhone:b.guest_phone,source:b.source,lockExpiresAt:b.lock_expires_at,createdAt:b.created_at,paidAt:b.paid_at,cancelledAt:b.cancelled_at,extrasSel:b.extras||[],extrasTotal:Number(b.extras_total||0),paidAmount:Number(b.paid_amount||0),paymentDue:b.payment_due,paymentMethod:b.payment_method});
@@ -303,6 +304,9 @@ async function reloadBookings(){const b=await sbGet('bookings?select=*');booking
 let SETTINGS={};
 async function reloadSettings(){const r=await sbGet('app_settings?select=key,value');SETTINGS={};(r||[]).forEach(function(x){SETTINGS[x.key]=x.value})}
 const SET=(k,d)=>SETTINGS[k]||d;
+/* 'demo' = nothing is charged and no account details are shown.
+   'bank_transfer' = the guest is asked to transfer. Flip it in app_settings. */
+const payMode=()=>SET('payment_mode','demo');
 let EXTRAS=[];
 async function reloadExtras(){const e=await sbGet('extras?select=*&order=sort,id');EXTRAS=e||[]}
 function activeExtras(){return EXTRAS.filter(function(e){return e.active!==false})}
@@ -382,8 +386,8 @@ function resultsS(){
  const n=nights(state.checkIn,state.checkOut);
  const opts=buildOptions(state.checkIn,state.checkOut,state.guests);
  let cards=opts.map(o=>{
-  if(o.type==='single'){const u=o.units[0];return `<div class="card unit-card"><img src="${u.photo}" alt=""><div class="body"><h3>${esc(u.name)}</h3><p class="desc">${esc(u.description)}</p><div class="muted" style="font-size:13px;margin-bottom:10px">${L('Sleeps up to','Bis zu')} ${u.maxGuests} ${L('','Gäste')}</div><div class="price-row"><span class="per">${CUR}${Math.round(o.total/n)} / ${L('night','Nacht')}</span><span class="total">${CUR}${o.total} <span class="per">${L('total','gesamt')}</span></span></div><button class="btn btn-block" onclick="openOption('${o.unitIds.join(',')}')">${L('View Details','Details ansehen')}</button></div></div>`}
-  const imgs=o.units.slice(0,2).map(u=>`<img src="${u.photo}" alt="">`).join('');
+  if(o.type==='single'){const u=o.units[0];return `<div class="card unit-card">${unitImg(u)}<div class="body"><h3>${esc((u.name||'').split('|').pop().trim())}</h3><p class="desc">${esc(u.description||u.location||'')}</p><div class="muted" style="font-size:13px;margin-bottom:10px">${L('Sleeps up to','Bis zu')} ${u.maxGuests} ${L('','Gäste')}</div><div class="price-row"><span class="per">${CUR}${Math.round(o.total/n)} / ${L('night','Nacht')}</span><span class="total">${CUR}${o.total} <span class="per">${L('total','gesamt')}</span></span></div><button class="btn btn-block" onclick="openOption('${o.unitIds.join(',')}')">${L('View Details','Details ansehen')}</button></div></div>`}
+  const imgs=o.units.slice(0,2).map(u=>unitImg(u)).join('');
   return `<div class="card unit-card"><div class="combo-imgs">${imgs}</div><div class="body"><span class="combo-badge">Kombination · ${o.units.length} Apartments</span><h3>${L('Group stay for','Gruppenaufenthalt für')} ${state.guests}</h3><div style="margin-bottom:10px">${o.units.map(u=>`<span class="chip">${esc(u.name)} · ${L('sleeps','bis zu')} ${u.maxGuests}</span>`).join('')}</div><div class="muted" style="font-size:13px;margin-bottom:10px">${L('Together they sleep up to '+o.capacity+' guests — booked as one reservation.','Zusammen bis zu '+o.capacity+' Gäste – als eine einzige Buchung.')}</div><div class="price-row"><span class="per">${o.units.length} Apartments</span><span class="total">${CUR}${o.total} <span class="per">${L('total','gesamt')}</span></span></div><button class="btn btn-block" onclick="openOption('${o.unitIds.join(',')}')">${L('View Combination','Kombination ansehen')}</button></div></div>`
  }).join('');
  return `<section class="section container">
@@ -427,7 +431,7 @@ function detailsS(){
  const desc=isCombo?`<h2 style="margin-top:20px">${L('Combination for '+state.guests+' guests','Kombination für '+state.guests+' Gäste')}</h2><p class="muted">${ids.length} ${L('apartments · sleeps up to','Apartments · bis zu')} ${cap}</p>`+ids.map(id=>{const u=getUnit(id);return `<div class="card pad" style="margin-bottom:10px"><strong>${esc(u.name)}</strong> <span class="muted">· ${esc(u.address)} · ${L('sleeps','bis zu')} ${u.maxGuests}</span><p class="muted" style="margin:6px 0 0">${esc(u.description)}</p></div>`}).join(''):`<h2 style="margin-top:20px">${esc(main.name)}</h2><p class="muted">📍 ${esc(main.address)} · ${L('Sleeps','Bis zu')} ${main.maxGuests}</p><p>${esc(main.description)}</p>`;
  return `<section class="section container"><a class="muted" style="cursor:pointer" onclick="go('results')">← ${L('Back to results','Zurück zu den Ergebnissen')}</a>
   <div class="two-col" style="margin-top:16px">
-   <div><img class="gallery" src="${main.photo}" alt="">${desc}</div>
+   <div>${unitImg(main,'gallery')}${desc}</div>
    <div class="card pad"><div class="stack">
     <div><div class="muted">${L('Your dates','Ihre Daten')}</div><strong>${fmt(state.checkIn)} → ${fmt(state.checkOut)}</strong><div class="muted">${n} ${L('nights','Nächte')} · ${state.guests} ${L('guests','Gäste')}</div></div>
     <div class="divider"></div>
@@ -522,6 +526,7 @@ function paymentS(){
  return `<section class="section container">
   <div class="summary-bar"><div><strong>${L('Payment','Zahlung')}</strong> <span class="muted">· ${esc(label)} · ${fmt(b.checkIn)} → ${fmt(b.checkOut)}</span></div><span class="timer" id="tmr">⏳ ${L('Held for','Reserviert für')} ${mmss(remainSecs())}</span></div>
   <div class="two-col">
+   ${payMode()==='bank_transfer'?`
    <div class="card pad"><h3 style="margin-top:0">${L('Pay by bank transfer','Zahlung per Überweisung')}</h3>
     <p class="muted" style="font-size:14px;margin-top:0">${L('Confirm your reservation now. We will then show you our account details and hold the apartment for you until the transfer arrives.','Bestätigen Sie jetzt Ihre Reservierung. Anschliessend erhalten Sie unsere Kontodaten; das Apartment bleibt für Sie reserviert, bis die Überweisung eingeht.')}</p>
     <div class="breakdown" style="margin-top:8px">
@@ -531,7 +536,13 @@ function paymentS(){
     </div>
     <button class="btn btn-block" id="payBtn" style="margin-top:18px" onclick="pay()">${L('Confirm reservation','Reservierung bestätigen')} · ${CUR}${b.total}</button>
     <p class="muted" style="font-size:12px;margin-top:10px">${L('No card is asked for and none is charged. You transfer the amount yourself from your own bank.','Es werden keine Kartendaten erhoben und nichts abgebucht. Sie überweisen den Betrag selbst von Ihrer Bank.')}</p>
-   </div>
+   </div>`:`
+   <div class="card pad"><h3 style="margin-top:0">${L('Payment','Zahlung')}</h3>
+    <label class="lbl">${L('Name on card','Name auf der Karte')}</label><input class="ctrl" autocomplete="off">
+    <label class="lbl" style="margin-top:14px">${L('Card number','Kartennummer')}</label><input class="ctrl" inputmode="numeric" autocomplete="off">
+    <div class="form-grid" style="margin-top:14px"><div><label class="lbl">${L('Expiry','Gültig bis')}</label><input class="ctrl" placeholder="MM / JJ" autocomplete="off"></div><div><label class="lbl">${L('Security code','Prüfnummer')}</label><input class="ctrl" inputmode="numeric" autocomplete="off"></div></div>
+    <button class="btn btn-block" id="payBtn" style="margin-top:18px" onclick="pay()">${L('Pay','Zahlen')} ${CUR}${b.total}</button>
+   </div>`}
    <div class="card pad"><h3 style="margin-top:0">${L('Order summary','Bestellübersicht')}</h3>
     <div class="breakdown"><div class="line"><span>${L('Subtotal','Zwischensumme')}</span><span>${CUR}${b.subtotal}</span></div>${b.discountAmount>0?`<div class="line discount"><span>${L('Discount','Rabatt')} (${esc(b.discountCode)})</span><span>−${CUR}${b.discountAmount}</span></div>`:''}${(b.extrasSel||[]).map(e=>`<div class="line"><span>${esc(extraLabel(e))}</span><span>${CUR}${e.amount}</span></div>`).join('')}<div class="line grand"><span>${L('Total due','Zu zahlen')}</span><span>${CUR}${b.total}</span></div></div>
     <p class="muted" style="font-size:13px">${L('Payable in full by transfer. No refund on cancellation.','Vollständig per Überweisung zu zahlen. Keine Rückerstattung bei Stornierung.')}</p>
@@ -542,13 +553,15 @@ async function pay(){
  if(remainSecs()<=0)return;
  const btn=document.getElementById('payBtn');btn.disabled=true;btn.textContent=L('Processing…','Wird verarbeitet…');
  const b=currentB();
- const res=await sbRpc('vs_reserve',{p_id:b.id});
+ const transfer=payMode()==='bank_transfer';
+ const res=await sbRpc(transfer?'vs_reserve':'vs_confirm',{p_id:b.id});
  if(!res||!res.ok){
-  btn.disabled=false;btn.textContent=L('Confirm reservation','Reservierung bestätigen');
+  btn.disabled=false;btn.textContent=transfer?L('Confirm reservation','Reservierung bestätigen'):L('Pay','Zahlen')+' '+CUR+b.total;
   alert(res&&res.error==='taken'?L('Sorry — that apartment was just taken. Nothing was charged.','Leider wurde dieses Apartment gerade gebucht. Es wurde nichts berechnet.')
                                 :L('Your hold has expired. Please search again.','Ihre Reservierung ist abgelaufen. Bitte erneut suchen.'));
   render();return}
- b.status='awaiting_payment';b.paymentDue=res.due;
+ if(transfer){b.status='awaiting_payment';b.paymentDue=res.due}
+ else{b.status='confirmed';b.paidAmount=b.total;b.paidAt=new Date().toISOString()}
  /* the confirmation email is sent by the server inside vs_confirm */
  go('confirmation');
 }
@@ -557,7 +570,10 @@ async function pay(){
 function confirmationS(){
  const b=currentB(),label=unitsLabel(b);
  return `<section class="section container"><div class="card pad" style="max-width:620px;margin:0 auto;text-align:center">
-  <div style="font-size:46px">✓</div><h2 style="margin-top:6px">${L('Reservation received','Reservierung eingegangen')}</h2><p class="muted">${L('We are holding this apartment for you. It is yours once the transfer arrives.','Wir halten dieses Apartment für Sie. Mit Eingang der Überweisung ist es verbindlich gebucht.')}</p>
+  <div style="font-size:46px">✓</div>
+  <h2 style="margin-top:6px">${payMode()==='bank_transfer'?L('Reservation received','Reservierung eingegangen'):L('Booking confirmed','Buchung bestätigt')}</h2>
+  <p class="muted">${payMode()==='bank_transfer'?L('We are holding this apartment for you. It is yours once the transfer arrives.','Wir halten dieses Apartment für Sie. Mit Eingang der Überweisung ist es verbindlich gebucht.'):L('Thank you — your stay is booked. A confirmation is on its way to','Vielen Dank — Ihr Aufenthalt ist gebucht. Eine Bestätigung geht an')+' '+esc(b.guestEmail)+'.'}</p>
+  ${payMode()!=='bank_transfer'?'':`
   <div class="notice" style="text-align:left">
    <strong>${L('Please transfer','Bitte überweisen Sie')} ${CUR}${b.total} ${L('by','bis')} ${b.paymentDue?fmt(b.paymentDue):''}</strong>
    <div class="breakdown" style="margin-top:10px">
@@ -568,9 +584,9 @@ function confirmationS(){
     <div class="line grand"><span>${L('Amount','Betrag')}</span><span>${CUR}${b.total}</span></div>
    </div>
    <p style="margin:10px 0 0;font-size:13px">${L('Without the reference we cannot match your payment. If nothing arrives by the date above, the apartment is released.','Ohne den Verwendungszweck können wir Ihre Zahlung nicht zuordnen. Geht bis zum genannten Datum nichts ein, wird das Apartment wieder freigegeben.')}</p>
-  </div>
+  </div>`}
   <div class="notice" style="background:#eef3ec;border-color:#cfe0cd;color:#3f5f45;text-align:left">${L('Your booking reference:','Ihre Buchungsnummer:')} <strong>${b.ref}</strong><br>${L("Keep this — you'll need it (with your email) to view your booking.",'Bewahren Sie diese auf – Sie benötigen sie (mit Ihrer E-Mail), um Ihre Buchung anzusehen.')}</div>
-  <div class="breakdown" style="text-align:left;margin-top:18px"><div class="line"><span>${b.unitIds.length>1?'Apartments':'Apartment'}</span><strong>${esc(label)}</strong></div><div class="line"><span>${L('Dates','Daten')}</span><span>${fmt(b.checkIn)} → ${fmt(b.checkOut)}</span></div><div class="line"><span>${L('Guests','Gäste')}</span><span>${b.guests}</span></div>${(b.extrasSel||[]).map(e=>`<div class="line"><span>${esc(extraLabel(e))}</span><span>${CUR}${e.amount}</span></div>`).join('')}<div class="line grand"><span>${L('To pay','Zu zahlen')}</span><span>${CUR}${b.total}</span></div></div>
+  <div class="breakdown" style="text-align:left;margin-top:18px"><div class="line"><span>${b.unitIds.length>1?'Apartments':'Apartment'}</span><strong>${esc(label)}</strong></div><div class="line"><span>${L('Dates','Daten')}</span><span>${fmt(b.checkIn)} → ${fmt(b.checkOut)}</span></div><div class="line"><span>${L('Guests','Gäste')}</span><span>${b.guests}</span></div>${(b.extrasSel||[]).map(e=>`<div class="line"><span>${esc(extraLabel(e))}</span><span>${CUR}${e.amount}</span></div>`).join('')}<div class="line grand"><span>${payMode()==='bank_transfer'?L('To pay','Zu zahlen'):L('Total','Gesamt')}</span><span>${CUR}${b.total}</span></div></div>
   <div class="divider"></div><div style="text-align:left"><strong>${L('Check-in instructions','Check-in-Hinweise')}</strong><p class="muted" style="margin-top:4px">${L('The address and access details will appear here. (Placeholder — the owner will provide this text.)','Adresse und Zugangsdaten erscheinen hier. (Platzhalter – der Eigentümer stellt diesen Text bereit.)')}</p></div>
   <button class="btn btn-block" style="margin-top:10px" onclick="openMBfor('${b.guestEmail}','${b.ref}')">${L('View My Bookings','Meine Buchungen ansehen')}</button>
  </div></section>`
