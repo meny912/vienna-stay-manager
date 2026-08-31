@@ -115,6 +115,10 @@ textarea.ctrl{width:100%;padding:11px 12px;border:1px solid var(--beige-line);bo
 .empty{text-align:center;padding:60px 20px;color:var(--muted)}.empty .icon{font-size:46px;margin-bottom:10px}
 .aptgroup td{background:var(--cream);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;padding:7px 10px}
 .ctrl.needs{border-color:#c9873a;background:#fdf6ee}
+.ph{width:100%;height:190px;display:grid;place-items:center;background:linear-gradient(135deg,#8a7d6b,#554c41);color:#fff;font-family:Georgia,serif;font-size:20px;letter-spacing:1px;text-align:center;padding:14px}
+.ph span{opacity:.92}
+.bldg{font-family:Georgia,serif;font-size:19px;margin:26px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--beige-line)}
+.onreq{margin-top:44px;padding-top:8px}
 .notice{background:#f7e3d6;border:1px solid #eac3ab;color:var(--danger-dark);border-radius:10px;padding:14px 16px;font-size:14px}
 .site-footer{background:var(--brand-darker);color:#e9e2d8;margin-top:50px;padding:26px 0;font-size:14px}
 .site-footer .container{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
@@ -227,7 +231,15 @@ const saveB=b=>localStorage.setItem(KEY,JSON.stringify(b));
 const makeRef=()=>'VS-'+Math.random().toString(36).slice(2,7).toUpperCase();
 const blocks=b=>b.status==='confirmed'||(b.status==='soft_locked'&&new Date(b.lockExpiresAt)>new Date());
 const unitBusy=(uid,ci,co,ex)=>bookings.some(b=>b.id!==ex&&blocks(b)&&b.unitIds.includes(uid)&&overlap(ci,co,b.checkIn,b.checkOut));
-const availableUnits=(ci,co)=>UNITS.filter(u=>!unitBusy(u.id,ci,co));
+/* A unit with no rate or no capacity is not sellable yet: it is shown to guests,
+   but on request only — never priced at zero. */
+const isBookable=u=>u.kind!=='garage'&&u.maxGuests>0&&u.basePricePerNight>0;
+const unitsFree=(ci,co)=>UNITS.filter(u=>u.kind!=='garage'&&!unitBusy(u.id,ci,co));
+const availableUnits=(ci,co)=>unitsFree(ci,co).filter(isBookable);
+const onRequestUnits=(ci,co)=>unitsFree(ci,co).filter(u=>!isBookable(u));
+/* Group anything by building, keeping the owner's own order. */
+function byBuilding(list){const m=new Map();list.forEach(function(u){const k=u.location||'Vienna';if(!m.has(k))m.set(k,[]);m.get(k).push(u)});return [...m.entries()]}
+function unitImg(u,cls){return u.photo?`<img src="${u.photo}" alt="" class="${cls||''}">`:`<div class="ph ${cls||''}"><span>${esc((u.name||'').split('|').pop().trim())}</span></div>`}
 function buildOptions(ci,co,guests){
  const avail=availableUnits(ci,co);
  const singles=avail.filter(u=>u.maxGuests>=guests).sort((a,b)=>priceForStay(a,ci,co)-priceForStay(b,ci,co));
@@ -266,7 +278,7 @@ function sbDelete(t,col,val){return fetch(SB_URL+'/'+t+'?'+col+'=eq.'+encodeURIC
 function sendMail(id,type){return fetch(SB_URL+'/rpc/send_booking_email',{method:'POST',headers:sbH(),body:JSON.stringify({p_id:id,p_type:type})}).catch(function(){})}
 /* every guest-side write now goes through a checked server function */
 async function sbRpc(fn,args){try{const r=await fetch(SB_URL+'/rpc/'+fn,{method:'POST',headers:sbH(),body:JSON.stringify(args||{})});if(!r.ok)return{ok:false,error:'network'};return await r.json()}catch(e){return{ok:false,error:'network'}}}
-const uFromDb=u=>({id:u.id,name:u.name,description:u.description,maxGuests:u.max_guests,basePricePerNight:Number(u.base_price_per_night),address:u.address,photo:u.photo,active:u.active,location:u.location||'',kind:u.kind||'apartment',sort:u.sort,lat:(u.lat!=null?Number(u.lat):null),lng:(u.lng!=null?Number(u.lng):null)});
+const uFromDb=u=>({id:u.id,name:u.name,description:u.description,maxGuests:u.max_guests,basePricePerNight:Number(u.base_price_per_night),address:u.address,photo:u.photo,active:u.active,location:u.location||'',kind:u.kind||'apartment',sort:u.sort,location:u.location||'',kind:u.kind||'apartment',sort:u.sort,lat:(u.lat!=null?Number(u.lat):null),lng:(u.lng!=null?Number(u.lng):null)});
 const sFromDb=r=>({id:r.id,unitId:r.unit_id,from:r.from_date,to:r.to_date,price:Number(r.price)});
 const cFromDb=c=>({code:c.code,type:c.type,value:Number(c.value),from:c.from_date,to:c.to_date,minNights:c.min_nights,active:c.active});
 const bFromDb=b=>({id:b.id,ref:b.ref,status:b.status,unitIds:b.unit_ids||[],checkIn:b.check_in,checkOut:b.check_out,nights:b.nights,guests:b.guests,subtotal:Number(b.subtotal),discountCode:b.discount_code,discountAmount:Number(b.discount_amount||0),total:Number(b.total),guestName:b.guest_name,guestEmail:b.guest_email,guestPhone:b.guest_phone,source:b.source,lockExpiresAt:b.lock_expires_at,createdAt:b.created_at,paidAt:b.paid_at,cancelledAt:b.cancelled_at,extrasSel:b.extras||[],extrasTotal:Number(b.extras_total||0)});
@@ -365,8 +377,32 @@ function resultsS(){
   <div class="summary-bar"><div><strong>${fmt(state.checkIn)} → ${fmt(state.checkOut)}</strong><span class="muted"> · ${n} ${L('nights','Nächte')} · ${state.guests} ${L('guests','Gäste')}</span></div><button class="btn btn-ghost" onclick="go('home')">${L('Change Search','Suche ändern')}</button></div>
   <h2>${opts.length&&opts[0].type==='combo'?L('Best combination for your group','Beste Kombination für Ihre Gruppe'):L('Available apartments','Verfügbare Apartments')}</h2>
   <p class="sub">${opts.length===0?'':opts[0].type==='combo'?L('No single apartment fits '+state.guests+' guests for these dates, so we combined a few — one booking, one price.','Kein einzelnes Apartment fasst '+state.guests+' Gäste an diesen Daten – daher haben wir mehrere kombiniert: eine Buchung, ein Preis.'):(opts.length+' '+L('apartments fit','Apartments für')+' '+state.guests+' '+L('guests.','Gäste.'))}</p>
-  ${opts.length===0?`<div class="empty"><div class="icon">🗓️</div><h3>${L('Nothing available for '+state.guests+' guests on these dates','Nichts verfügbar für '+state.guests+' Gäste an diesen Daten')}</h3><p>${L('Try different dates, or fewer guests.','Versuchen Sie andere Daten oder weniger Gäste.')}</p><button class="btn" onclick="go('home')">${L('Change Search','Suche ändern')}</button></div>`:`<div class="grid">${cards}</div>`}
+  ${opts.length===0?`<div class="empty"><div class="icon">🗓️</div><h3>${L('Nothing bookable online for '+state.guests+' guests on these dates','Online nichts verfügbar für '+state.guests+' Gäste an diesen Daten')}</h3><p>${L('Try different dates, or ask us directly — more apartments are listed below.','Versuchen Sie andere Daten, oder fragen Sie uns direkt — weitere Apartments finden Sie unten.')}</p><button class="btn" onclick="go('home')">${L('Change Search','Suche ändern')}</button></div>`:`<div class="grid">${cards}</div>`}
+  ${onRequestS(n)}
  </section>`
+}
+/* Apartments we have for these dates but cannot price online yet.
+   Listed by building, with a direct line to us instead of a Book button. */
+function onRequestS(n){
+ const free=onRequestUnits(state.checkIn,state.checkOut);
+ if(!free.length)return '';
+ const groups=byBuilding(free).map(function(pair){
+  const building=pair[0],list=pair[1];
+  const cards=list.map(function(u){
+   const nm=(u.name||'').split('|').pop().trim();
+   const cap=u.maxGuests>0?`<div class="muted" style="font-size:13px;margin-bottom:10px">${L('Sleeps up to','Bis zu')} ${u.maxGuests}</div>`:'';
+   const msg=encodeURIComponent(L('Hello, I would like to ask about ','Guten Tag, ich interessiere mich für ')+nm+' ('+fmt(state.checkIn)+' → '+fmt(state.checkOut)+')');
+   return `<div class="card unit-card">${unitImg(u)}<div class="body"><h3>${esc(nm)}</h3>
+    <p class="desc">${esc(u.description||building)}</p>${cap}
+    <div class="price-row"><span class="per">${L('Price on request','Preis auf Anfrage')}</span></div>
+    <a class="btn btn-block" href="${WA_LINK}?text=${msg}" target="_blank" rel="noopener noreferrer">${L('Ask about this apartment','Nach diesem Apartment fragen')}</a>
+   </div></div>`;
+  }).join('');
+  return `<h3 class="bldg">${esc(building)} <span class="muted">· ${list.length} ${L('apartments','Apartments')}</span></h3><div class="grid">${cards}</div>`;
+ }).join('');
+ return `<div class="onreq"><h2>${L('More of our apartments','Weitere Apartments von uns')}</h2>
+  <p class="sub">${L('Free on your dates. We quote these personally — write to us and you will get an answer the same day.','An Ihren Daten frei. Diese Apartments bepreisen wir persönlich — schreiben Sie uns, Sie erhalten noch am selben Tag eine Antwort.')}</p>
+  ${groups}</div>`;
 }
 function openOption(csv){state.selectedUnitIds=csv.split(',');go('details')}
 
