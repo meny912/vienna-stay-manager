@@ -260,13 +260,13 @@ const api=(fn,args)=>rpc(fn,Object.assign({p_token:S.token},args||{}));
 
 /* ---------------- auth ---------------- */
 async function staffLogin(){
- const name=$('#lName').value.trim(),pass=$('#lPass').value;
+ const name=$('#lName').value.trim(),pass=$('#lPass').value;ls('vst_name',name);
  if(!name){S.err=t('needName');render();return}
  S.busy=true;S.err='';render();
  try{const tok=await rpc('ops_staff_login',{p_name:name,p_pass:pass});ls('vst_name',name);await afterLogin(tok)}
  catch(e){S.err=e.message;S.busy=false;render()}}
 async function managerLogin(){
- let u=$('#mUser').value.trim();const pass=$('#mPass').value,dn=$('#mName').value.trim()||'Manager';
+ let u=$('#mUser').value.trim();const pass=$('#mPass').value,dn=$('#mName').value.trim()||'Manager';S.mUser=u;S.mName=$('#mName').value;
  const email=u.includes('@')?u:u.toLowerCase().replace(/[^a-z0-9]/g,'')+'@vienna-stay.com';
  S.busy=true;S.err='';render();
  try{
@@ -354,9 +354,9 @@ function loginView(){const st=S.loginMode==='staff';return `<main><div class="lo
   ${S.err?`<div class="err">${esc(S.err)}</div>`:''}
   <button class="btn block" style="margin-top:16px" ${S.busy?'disabled':''} onclick="staffLogin()">${esc(t('login'))}</button>`:`
   <div class="mute small">${esc(t('mgrAccount'))}</div>
-  <label class="f">${esc(t('username'))}</label><input class="i" id="mUser" autocapitalize="none" autocomplete="username">
+  <label class="f">${esc(t('username'))}</label><input class="i" id="mUser" autocapitalize="none" autocomplete="username" value="${esc(S.mUser||'')}">
   <label class="f">${esc(t('password'))}</label><input class="i" id="mPass" type="password" autocomplete="current-password">
-  <label class="f">${esc(t('displayName'))}</label><input class="i" id="mName" value="${esc(ls('vst_mname')||'')}" placeholder="Manager" onkeydown="if(event.key==='Enter')managerLogin()">
+  <label class="f">${esc(t('displayName'))}</label><input class="i" id="mName" value="${esc(S.mName??ls('vst_mname')??'')}" placeholder="Manager" onkeydown="if(event.key==='Enter')managerLogin()">
   ${S.err?`<div class="err">${esc(S.err)}</div>`:''}
   <button class="btn block" style="margin-top:16px" ${S.busy?'disabled':''} onclick="managerLogin()">${esc(t('login'))}</button>`}
  </div><p class="mute small" style="text-align:center">${esc(t('installHint'))}</p></div></main>`}
